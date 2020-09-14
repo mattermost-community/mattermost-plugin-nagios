@@ -234,3 +234,162 @@ type AlertList struct {
 	Result        Result        `json:"result"`
 	Data          AlertListData `json:"data"`
 }
+
+type HostNotificationTypes struct {
+	NoData        bool
+	Down          bool
+	Unreachable   bool
+	Recovery      bool
+	HostCustom    bool
+	HostAck       bool
+	HostFlapStart bool
+	HostFlapStop  bool
+}
+
+func (h HostNotificationTypes) String() string {
+	var options []string
+
+	if h.NoData {
+		options = append(options, "nodata")
+	}
+	if h.Down {
+		options = append(options, "down")
+	}
+	if h.Unreachable {
+		options = append(options, "unreachable")
+	}
+	if h.Recovery {
+		options = append(options, "recovery")
+	}
+	if h.HostCustom {
+		options = append(options, "hostcustom")
+	}
+	if h.HostAck {
+		options = append(options, "hostack")
+	}
+	if h.HostFlapStart {
+		options = append(options, "hostflapstart")
+	}
+	if h.HostFlapStop {
+		options = append(options, "hostflapstop")
+	}
+
+	return buildOptions(options)
+}
+
+type ServiceNotificationTypes struct {
+	NoData           bool
+	Critical         bool
+	Warning          bool
+	Recovery         bool
+	Custom           bool
+	ServiceAck       bool
+	ServiceFlapStart bool
+	ServiceFlapStop  bool
+	Unknown          bool
+}
+
+func (s ServiceNotificationTypes) String() string {
+	var options []string
+
+	if s.NoData {
+		options = append(options, "nodata")
+	}
+	if s.Critical {
+		options = append(options, "critical")
+	}
+	if s.Warning {
+		options = append(options, "warning")
+	}
+	if s.Recovery {
+		options = append(options, "recovery")
+	}
+	if s.Custom {
+		options = append(options, "custom")
+	}
+	if s.ServiceAck {
+		options = append(options, "serviceack")
+	}
+	if s.ServiceFlapStart {
+		options = append(options, "serviceflapstart")
+	}
+	if s.ServiceFlapStop {
+		options = append(options, "serviceflapstop")
+	}
+	if s.Unknown {
+		options = append(options, "unknown")
+	}
+
+	return buildOptions(options)
+}
+
+type notificationRequest struct {
+	FormatOptions            FormatOptions
+	Start                    int
+	Count                    int
+	DateFormat               string
+	ObjectTypes              ObjectTypes
+	HostNotificationTypes    HostNotificationTypes
+	ServiceNotificationTypes ServiceNotificationTypes
+	ParentHost               string
+	ChildHost                string
+	HostName                 string
+	HostGroup                string
+	ServiceGroup             string
+	ServiceDescription       string
+	ContactName              string
+	ContactGroup             string
+	NotificationMethod       string
+	BacktrackedArchives      string
+	StartTime                int64
+	EndTime                  int64
+}
+
+func (n notificationRequest) build(includeStartCount bool) Query {
+	q := Query{
+		Endpoint: archiveEndpoint,
+		URLQuery: make(url.Values),
+	}
+
+	q.SetNonEmpty("formatoptions", n.FormatOptions.String())
+
+	if includeStartCount {
+		q.SetNonEmpty("start", strconv.Itoa(n.Start))
+		q.SetNonEmpty("count", strconv.Itoa(n.Count))
+	}
+
+	q.SetNonEmpty("dateformat", n.DateFormat)
+	q.SetNonEmpty("objecttypes", n.ObjectTypes.String())
+	q.SetNonEmpty("hostnotificationtypes", n.HostNotificationTypes.String())
+	q.SetNonEmpty("servicenotificationtypes", n.ServiceNotificationTypes.String())
+	q.SetNonEmpty("parenthost", n.ParentHost)
+	q.SetNonEmpty("childhost", n.ChildHost)
+	q.SetNonEmpty("hostname", n.HostName)
+	q.SetNonEmpty("hostgroup", n.HostGroup)
+	q.SetNonEmpty("servicegroup", n.ServiceGroup)
+	q.SetNonEmpty("servicedescription", n.ServiceDescription)
+	q.SetNonEmpty("contactname", n.ContactName)
+	q.SetNonEmpty("contactgroup", n.ContactGroup)
+	q.SetNonEmpty("notificationmethod", n.NotificationMethod)
+	q.SetNonEmpty("backtrackedarchives", n.BacktrackedArchives)
+	q.SetNonEmpty("starttime", strconv.FormatInt(n.StartTime, 10))
+	q.SetNonEmpty("endtime", strconv.FormatInt(n.EndTime, 10))
+
+	return q
+}
+
+type NotificationCountRequest struct {
+	notificationRequest
+}
+
+func (n NotificationCountRequest) Build() Query {
+	return n.build(false)
+}
+
+type NotificationListRequest struct {
+	notificationRequest
+}
+
+func (n NotificationListRequest) Build() Query {
+	return n.build(true)
+}
