@@ -1,9 +1,12 @@
 package nagios
 
 import (
+	"net/url"
 	"strconv"
 	"strings"
 )
+
+const archiveEndpoint = "archivejson.cgi"
 
 func buildOptions(options []string) string {
 	var b strings.Builder
@@ -151,31 +154,71 @@ type alertRequest struct {
 }
 
 func (a alertRequest) build(includeStartCount bool) Query {
-	q := Query{map[string][]string{}}
-
-	q.Add("formatoptions", a.FormatOptions.String())
-
-	if includeStartCount {
-		q.Add("start", strconv.Itoa(a.Start))
-		q.Add("count", strconv.Itoa(a.Count))
+	q := Query{
+		Endpoint: archiveEndpoint,
+		URLQuery: make(url.Values),
 	}
 
-	q.Add("dateformat", strconv.Itoa(a.Count))
-	q.Add("objecttypes", a.ObjectTypes.String())
-	q.Add("statetypes", a.StateTypes.String())
-	q.Add("hoststates", a.HostStates.String())
-	q.Add("servicestates", a.ServiceStates.String())
-	q.Add("parenthost", a.ParentHost)
-	q.Add("childhost", a.ChildHost)
-	q.Add("hostname", a.HostName)
-	q.Add("hostgroup", a.HostGroup)
-	q.Add("servicegroup", a.ServiceGroup)
-	q.Add("servicedescription", a.ServiceDescription)
-	q.Add("contactname", a.ContactName)
-	q.Add("contactgroup", a.ContactGroup)
-	q.Add("backtrackedarchives", a.BacktrackedArchives)
-	q.Add("starttime", strconv.FormatInt(a.StartTime, 10))
-	q.Add("endtime", strconv.FormatInt(a.EndTime, 10))
+	if v := a.FormatOptions.String(); len(v) > 0 {
+		q.URLQuery.Add("formatoptions", v)
+	}
+
+	if includeStartCount {
+		if a.Start > 0 {
+			q.URLQuery.Add("start", strconv.Itoa(a.Start))
+		}
+		if a.Count > 0 {
+			q.URLQuery.Add("count", strconv.Itoa(a.Count))
+		}
+	}
+
+	if len(a.DateFormat) > 0 {
+		q.URLQuery.Add("dateformat", a.DateFormat)
+	}
+
+	if v := a.ObjectTypes.String(); len(v) > 0 {
+		q.URLQuery.Add("objecttypes", v)
+	}
+	if v := a.StateTypes.String(); len(v) > 0 {
+		q.URLQuery.Add("statetypes", v)
+	}
+	if v := a.HostStates.String(); len(v) > 0 {
+		q.URLQuery.Add("hoststates", v)
+	}
+	if v := a.ServiceStates.String(); len(v) > 0 {
+		q.URLQuery.Add("servicestates", v)
+	}
+
+	if len(a.ParentHost) > 0 {
+		q.URLQuery.Add("parenthost", a.ParentHost)
+	}
+	if len(a.ChildHost) > 0 {
+		q.URLQuery.Add("childhost", a.ChildHost)
+	}
+	if len(a.HostName) > 0 {
+		q.URLQuery.Add("hostname", a.HostName)
+	}
+	if len(a.HostGroup) > 0 {
+		q.URLQuery.Add("hostgroup", a.HostGroup)
+	}
+	if len(a.ServiceGroup) > 0 {
+		q.URLQuery.Add("servicegroup", a.ServiceGroup)
+	}
+	if len(a.ServiceDescription) > 0 {
+		q.URLQuery.Add("servicedescription", a.ServiceDescription)
+	}
+	if len(a.ContactName) > 0 {
+		q.URLQuery.Add("contactname", a.ContactName)
+	}
+	if len(a.ContactGroup) > 0 {
+		q.URLQuery.Add("contactgroup", a.ContactGroup)
+	}
+	if len(a.BacktrackedArchives) > 0 {
+		q.URLQuery.Add("backtrackedarchives", a.BacktrackedArchives)
+	}
+
+	q.URLQuery.Add("starttime", strconv.FormatInt(a.StartTime, 10))
+	q.URLQuery.Add("endtime", strconv.FormatInt(a.EndTime, 10))
 
 	return q
 }

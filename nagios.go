@@ -7,7 +7,10 @@ import (
 	"net/url"
 )
 
-type Query struct{ url.Values }
+type Query struct {
+	Endpoint string
+	URLQuery url.Values
+}
 
 type QueryBuilder interface {
 	Build() Query
@@ -18,25 +21,22 @@ type Client struct {
 	u *url.URL
 }
 
-func cloneURLUpToPath(u *url.URL) *url.URL {
+func cloneURLToPath(u *url.URL) *url.URL {
 	return &url.URL{
-		Scheme:      u.Scheme,
-		Opaque:      u.Opaque,
-		User:        u.User,
-		Host:        u.Host,
-		Path:        u.Path,
-		RawPath:     u.RawPath,
-		ForceQuery:  true,
-		RawQuery:    "",
-		Fragment:    "",
-		RawFragment: "",
+		Scheme: u.Scheme,
+		Opaque: u.Opaque,
+		User:   u.User,
+		Host:   u.Host,
 	}
 }
 
-func (c Client) Query(q QueryBuilder, v interface{}) error {
-	u := cloneURLUpToPath(c.u)
+func (c Client) Query(b QueryBuilder, v interface{}) error {
+	u := cloneURLToPath(c.u)
 
-	u.RawQuery = q.Build().Encode()
+	q := b.Build()
+
+	u.Path = fmt.Sprintf("/nagios/cgi-bin/%s", q.Endpoint)
+	u.RawQuery = q.URLQuery.Encode()
 
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
@@ -64,6 +64,6 @@ func NewClient(client *http.Client, address string) (*Client, error) {
 
 	return &Client{
 		c: client,
-		u: cloneURLUpToPath(u),
+		u: cloneURLToPath(u),
 	}, nil
 }
