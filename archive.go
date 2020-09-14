@@ -1,6 +1,7 @@
 package nagios
 
 import (
+	"encoding/json"
 	"net/url"
 	"strconv"
 	"strings"
@@ -237,4 +238,36 @@ type AlertListRequest struct {
 
 func (a AlertListRequest) Build() Query {
 	return a.build(true)
+}
+
+type AlertCountData struct {
+	Selectors map[string]json.RawMessage `json:"selectors"`
+	Count     int                        `json:"count"`
+}
+
+type AlertCount struct {
+	FormatVersion int            `json:"format_version"`
+	Result        Result         `json:"result"`
+	Data          AlertCountData `json:"data"`
+}
+
+type AlertListEntry struct {
+	Timestamp    int64  `json:"timestamp"`
+	ObjectType   int    `json:"object_type"`
+	HostName     string `json:"host_name"`
+	Description  string `json:"description"`
+	StateType    int    `json:"state_type"`
+	State        int    `json:"state"`
+	PluginOutput string `json:"plugin_output"`
+}
+
+type AlertListData struct {
+	Selectors map[string]json.RawMessage `json:"selectors"`
+	Entries   []AlertListEntry           `json:"alertlist"`
+}
+
+type AlertList struct {
+	FormatVersion int           `json:"format_version"`
+	Result        Result        `json:"result"`
+	Data          AlertListData `json:"data"`
 }
