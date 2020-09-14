@@ -7,6 +7,7 @@ import (
 	"net/url"
 )
 
+// Query represents a query to be executed against Nagios instance.
 type Query struct {
 	Endpoint string
 	URLQuery url.Values
@@ -16,6 +17,7 @@ type QueryBuilder interface {
 	Build() Query
 }
 
+// Client represents a Nagios Core JSON CGIs client.
 type Client struct {
 	c *http.Client
 	u *url.URL
@@ -30,12 +32,16 @@ func cloneURLToPath(u *url.URL) *url.URL {
 	}
 }
 
+func getPathLayout(endpoint string) string {
+	return fmt.Sprintf("/nagios/cgi-bin/%s", endpoint)
+}
+
 func (c Client) Query(b QueryBuilder, v interface{}) error {
 	u := cloneURLToPath(c.u)
 
 	q := b.Build()
 
-	u.Path = fmt.Sprintf("/nagios/cgi-bin/%s", q.Endpoint)
+	u.Path = getPathLayout(q.Endpoint)
 	u.RawQuery = q.URLQuery.Encode()
 
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
@@ -56,6 +62,7 @@ func (c Client) Query(b QueryBuilder, v interface{}) error {
 	return nil
 }
 
+// NewClient returns initialized Client and any error encountered.
 func NewClient(client *http.Client, address string) (*Client, error) {
 	u, err := url.Parse(address)
 	if err != nil {
