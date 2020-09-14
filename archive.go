@@ -393,3 +393,34 @@ type NotificationListRequest struct {
 func (n NotificationListRequest) Build() Query {
 	return n.build(true)
 }
+
+type NotificationCountData struct {
+	Selectors map[string]json.RawMessage `json:"selectors"`
+	Count     int                        `json:"count"`
+}
+
+type NotificationCount struct {
+	FormatVersion int                   `json:"format_version"`
+	Result        Result                `json:"result"`
+	Data          NotificationCountData `json:"data"`
+}
+
+type NotificationListEntry struct {
+	Timestamp        int64  `json:"timestamp"`
+	ObjectType       string `json:"object_type"`
+	HostName         string `json:"host_name"`
+	Description      string `json:"description"`
+	Contact          string `json:"contact"`
+	NotificationType string `json:"notification_type"`
+	Method           string `json:"method"`
+	Message          string `json:"message"`
+}
+type NotificationListData struct {
+	Selectors        map[string]json.RawMessage `json:"selectors"`
+	NotificationList []NotificationListEntry    `json:"notificationlist"`
+}
+type NotificationList struct {
+	FormatVersion int                  `json:"format_version"`
+	Result        Result               `json:"result"`
+	Data          NotificationListData `json:"data"`
+}
