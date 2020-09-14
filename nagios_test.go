@@ -152,10 +152,10 @@ func TestClient_Query(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle(getPathLayout(testEndpoint), http.HandlerFunc(h))
 
-	server := httptest.NewTLSServer(mux)
-	defer server.Close()
+	srv := httptest.NewTLSServer(mux)
+	defer srv.Close()
 
-	c, err := NewClient(server.Client(), server.URL)
+	c, err := NewClient(srv.Client(), srv.URL)
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)
 	}

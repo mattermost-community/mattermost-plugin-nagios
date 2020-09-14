@@ -7,7 +7,6 @@ import (
 	"net/url"
 )
 
-// Query represents a query to be executed against Nagios instance.
 type Query struct {
 	Endpoint string
 	URLQuery url.Values
@@ -36,6 +35,8 @@ func getPathLayout(endpoint string) string {
 	return fmt.Sprintf("/nagios/cgi-bin/%s", endpoint)
 }
 
+// Query builds query using QueryBuilder implementation, queries Nagios Core
+// instance and stores the response in the compatible value pointed to by v.
 func (c Client) Query(b QueryBuilder, v interface{}) error {
 	u := cloneURLToPath(c.u)
 
