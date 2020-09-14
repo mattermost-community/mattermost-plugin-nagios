@@ -160,66 +160,29 @@ func (a alertRequest) build(includeStartCount bool) Query {
 		URLQuery: make(url.Values),
 	}
 
-	if v := a.FormatOptions.String(); len(v) > 0 {
-		q.URLQuery.Add("formatoptions", v)
-	}
+	q.SetNonEmpty("formatoptions", a.FormatOptions.String())
 
 	if includeStartCount {
-		if a.Start > 0 {
-			q.URLQuery.Add("start", strconv.Itoa(a.Start))
-		}
-		if a.Count > 0 {
-			q.URLQuery.Add("count", strconv.Itoa(a.Count))
-		}
+		q.SetNonEmpty("start", strconv.Itoa(a.Start))
+		q.SetNonEmpty("count", strconv.Itoa(a.Count))
 	}
 
-	if len(a.DateFormat) > 0 {
-		q.URLQuery.Add("dateformat", a.DateFormat)
-	}
-
-	if v := a.ObjectTypes.String(); len(v) > 0 {
-		q.URLQuery.Add("objecttypes", v)
-	}
-	if v := a.StateTypes.String(); len(v) > 0 {
-		q.URLQuery.Add("statetypes", v)
-	}
-	if v := a.HostStates.String(); len(v) > 0 {
-		q.URLQuery.Add("hoststates", v)
-	}
-	if v := a.ServiceStates.String(); len(v) > 0 {
-		q.URLQuery.Add("servicestates", v)
-	}
-
-	if len(a.ParentHost) > 0 {
-		q.URLQuery.Add("parenthost", a.ParentHost)
-	}
-	if len(a.ChildHost) > 0 {
-		q.URLQuery.Add("childhost", a.ChildHost)
-	}
-	if len(a.HostName) > 0 {
-		q.URLQuery.Add("hostname", a.HostName)
-	}
-	if len(a.HostGroup) > 0 {
-		q.URLQuery.Add("hostgroup", a.HostGroup)
-	}
-	if len(a.ServiceGroup) > 0 {
-		q.URLQuery.Add("servicegroup", a.ServiceGroup)
-	}
-	if len(a.ServiceDescription) > 0 {
-		q.URLQuery.Add("servicedescription", a.ServiceDescription)
-	}
-	if len(a.ContactName) > 0 {
-		q.URLQuery.Add("contactname", a.ContactName)
-	}
-	if len(a.ContactGroup) > 0 {
-		q.URLQuery.Add("contactgroup", a.ContactGroup)
-	}
-	if len(a.BacktrackedArchives) > 0 {
-		q.URLQuery.Add("backtrackedarchives", a.BacktrackedArchives)
-	}
-
-	q.URLQuery.Add("starttime", strconv.FormatInt(a.StartTime, 10))
-	q.URLQuery.Add("endtime", strconv.FormatInt(a.EndTime, 10))
+	q.SetNonEmpty("dateformat", a.DateFormat)
+	q.SetNonEmpty("objecttypes", a.ObjectTypes.String())
+	q.SetNonEmpty("statetypes", a.StateTypes.String())
+	q.SetNonEmpty("hoststates", a.HostStates.String())
+	q.SetNonEmpty("servicestates", a.ServiceStates.String())
+	q.SetNonEmpty("parenthost", a.ParentHost)
+	q.SetNonEmpty("childhost", a.ChildHost)
+	q.SetNonEmpty("hostname", a.HostName)
+	q.SetNonEmpty("hostgroup", a.HostGroup)
+	q.SetNonEmpty("servicegroup", a.ServiceGroup)
+	q.SetNonEmpty("servicedescription", a.ServiceDescription)
+	q.SetNonEmpty("contactname", a.ContactName)
+	q.SetNonEmpty("contactgroup", a.ContactGroup)
+	q.SetNonEmpty("backtrackedarchives", a.BacktrackedArchives)
+	q.SetNonEmpty("starttime", strconv.FormatInt(a.StartTime, 10))
+	q.SetNonEmpty("endtime", strconv.FormatInt(a.EndTime, 10))
 
 	return q
 }
@@ -253,17 +216,17 @@ type AlertCount struct {
 
 type AlertListEntry struct {
 	Timestamp    int64  `json:"timestamp"`
-	ObjectType   int    `json:"object_type"`
+	ObjectType   string `json:"object_type"`
 	HostName     string `json:"host_name"`
 	Description  string `json:"description"`
-	StateType    int    `json:"state_type"`
-	State        int    `json:"state"`
+	StateType    string `json:"state_type"`
+	State        string `json:"state"`
 	PluginOutput string `json:"plugin_output"`
 }
 
 type AlertListData struct {
 	Selectors map[string]json.RawMessage `json:"selectors"`
-	Entries   []AlertListEntry           `json:"alertlist"`
+	AlertList []AlertListEntry           `json:"alertlist"`
 }
 
 type AlertList struct {
