@@ -4,49 +4,9 @@ import (
 	"encoding/json"
 	"net/url"
 	"strconv"
-	"strings"
 )
 
 const archiveEndpoint = "archivejson.cgi"
-
-func buildOptions(options []string) string {
-	var b strings.Builder
-
-	for i, o := range options {
-		if i > 0 {
-			b.WriteRune(' ')
-		}
-		b.WriteString(o)
-	}
-
-	return b.String()
-}
-
-type FormatOptions struct {
-	Whitespace bool
-	Enumerate  bool
-	Bitmask    bool
-	Duration   bool
-}
-
-func (f FormatOptions) String() string {
-	var options []string
-
-	if f.Whitespace {
-		options = append(options, "whitespace")
-	}
-	if f.Enumerate {
-		options = append(options, "enumerate")
-	}
-	if f.Bitmask {
-		options = append(options, "bitmask")
-	}
-	if f.Duration {
-		options = append(options, "duration")
-	}
-
-	return buildOptions(options)
-}
 
 type ObjectTypes struct {
 	Host    bool
@@ -132,7 +92,7 @@ func (s ServiceStates) String() string {
 	return buildOptions(options)
 }
 
-type alertRequest struct {
+type GeneralAlertRequest struct {
 	FormatOptions       FormatOptions
 	Start               int
 	Count               int
@@ -154,53 +114,57 @@ type alertRequest struct {
 	EndTime             int64
 }
 
-func (a alertRequest) build(includeStartCount bool) Query {
+func (g GeneralAlertRequest) build(query string, includeStartCount bool) Query {
 	q := Query{
 		Endpoint: archiveEndpoint,
 		URLQuery: make(url.Values),
 	}
 
-	q.SetNonEmpty("formatoptions", a.FormatOptions.String())
+	q.SetNonEmpty("query", query)
+	q.SetNonEmpty("formatoptions", g.FormatOptions.String())
 
 	if includeStartCount {
-		q.SetNonEmpty("start", strconv.Itoa(a.Start))
-		q.SetNonEmpty("count", strconv.Itoa(a.Count))
+		q.URLQuery.Set("start", strconv.Itoa(g.Start))
+		if g.Count > 0 {
+			q.URLQuery.Set("count", strconv.Itoa(g.Count))
+		}
 	}
 
-	q.SetNonEmpty("dateformat", a.DateFormat)
-	q.SetNonEmpty("objecttypes", a.ObjectTypes.String())
-	q.SetNonEmpty("statetypes", a.StateTypes.String())
-	q.SetNonEmpty("hoststates", a.HostStates.String())
-	q.SetNonEmpty("servicestates", a.ServiceStates.String())
-	q.SetNonEmpty("parenthost", a.ParentHost)
-	q.SetNonEmpty("childhost", a.ChildHost)
-	q.SetNonEmpty("hostname", a.HostName)
-	q.SetNonEmpty("hostgroup", a.HostGroup)
-	q.SetNonEmpty("servicegroup", a.ServiceGroup)
-	q.SetNonEmpty("servicedescription", a.ServiceDescription)
-	q.SetNonEmpty("contactname", a.ContactName)
-	q.SetNonEmpty("contactgroup", a.ContactGroup)
-	q.SetNonEmpty("backtrackedarchives", a.BacktrackedArchives)
-	q.SetNonEmpty("starttime", strconv.FormatInt(a.StartTime, 10))
-	q.SetNonEmpty("endtime", strconv.FormatInt(a.EndTime, 10))
+	q.SetNonEmpty("dateformat", g.DateFormat)
+	q.SetNonEmpty("objecttypes", g.ObjectTypes.String())
+	q.SetNonEmpty("statetypes", g.StateTypes.String())
+	q.SetNonEmpty("hoststates", g.HostStates.String())
+	q.SetNonEmpty("servicestates", g.ServiceStates.String())
+	q.SetNonEmpty("parenthost", g.ParentHost)
+	q.SetNonEmpty("childhost", g.ChildHost)
+	q.SetNonEmpty("hostname", g.HostName)
+	q.SetNonEmpty("hostgroup", g.HostGroup)
+	q.SetNonEmpty("servicegroup", g.ServiceGroup)
+	q.SetNonEmpty("servicedescription", g.ServiceDescription)
+	q.SetNonEmpty("contactname", g.ContactName)
+	q.SetNonEmpty("contactgroup", g.ContactGroup)
+	q.SetNonEmpty("backtrackedarchives", g.BacktrackedArchives)
+
+	q.URLQuery.Set("starttime", strconv.FormatInt(g.StartTime, 10))
+	q.URLQuery.Set("endtime", strconv.FormatInt(g.EndTime, 10))
 
 	return q
 }
 
 type AlertCountRequest struct {
-	alertRequest
+	GeneralAlertRequest
 }
 
 func (a AlertCountRequest) Build() Query {
-	return a.build(false)
+	return a.build("alertcount", false)
 }
 
 type AlertListRequest struct {
-	alertRequest
+	GeneralAlertRequest
 }
 
 func (a AlertListRequest) Build() Query {
-	return a.build(true)
+	return a.build("alertlist", true)
 }
 
 type AlertCountData struct {
@@ -323,7 +287,7 @@ func (s ServiceNotificationTypes) String() string {
 	return buildOptions(options)
 }
 
-type notificationRequest struct {
+type GeneralNotificationRequest struct {
 	FormatOptions            FormatOptions
 	Start                    int
 	Count                    int
@@ -345,53 +309,57 @@ type notificationRequest struct {
 	EndTime                  int64
 }
 
-func (n notificationRequest) build(includeStartCount bool) Query {
+func (g GeneralNotificationRequest) build(query string, includeStartCount bool) Query {
 	q := Query{
 		Endpoint: archiveEndpoint,
 		URLQuery: make(url.Values),
 	}
 
-	q.SetNonEmpty("formatoptions", n.FormatOptions.String())
+	q.SetNonEmpty("query", query)
+	q.SetNonEmpty("formatoptions", g.FormatOptions.String())
 
 	if includeStartCount {
-		q.SetNonEmpty("start", strconv.Itoa(n.Start))
-		q.SetNonEmpty("count", strconv.Itoa(n.Count))
+		q.URLQuery.Set("start", strconv.Itoa(g.Start))
+		if g.Count > 0 {
+			q.URLQuery.Set("count", strconv.Itoa(g.Count))
+		}
 	}
 
-	q.SetNonEmpty("dateformat", n.DateFormat)
-	q.SetNonEmpty("objecttypes", n.ObjectTypes.String())
-	q.SetNonEmpty("hostnotificationtypes", n.HostNotificationTypes.String())
-	q.SetNonEmpty("servicenotificationtypes", n.ServiceNotificationTypes.String())
-	q.SetNonEmpty("parenthost", n.ParentHost)
-	q.SetNonEmpty("childhost", n.ChildHost)
-	q.SetNonEmpty("hostname", n.HostName)
-	q.SetNonEmpty("hostgroup", n.HostGroup)
-	q.SetNonEmpty("servicegroup", n.ServiceGroup)
-	q.SetNonEmpty("servicedescription", n.ServiceDescription)
-	q.SetNonEmpty("contactname", n.ContactName)
-	q.SetNonEmpty("contactgroup", n.ContactGroup)
-	q.SetNonEmpty("notificationmethod", n.NotificationMethod)
-	q.SetNonEmpty("backtrackedarchives", n.BacktrackedArchives)
-	q.SetNonEmpty("starttime", strconv.FormatInt(n.StartTime, 10))
-	q.SetNonEmpty("endtime", strconv.FormatInt(n.EndTime, 10))
+	q.SetNonEmpty("dateformat", g.DateFormat)
+	q.SetNonEmpty("objecttypes", g.ObjectTypes.String())
+	q.SetNonEmpty("hostnotificationtypes", g.HostNotificationTypes.String())
+	q.SetNonEmpty("servicenotificationtypes", g.ServiceNotificationTypes.String())
+	q.SetNonEmpty("parenthost", g.ParentHost)
+	q.SetNonEmpty("childhost", g.ChildHost)
+	q.SetNonEmpty("hostname", g.HostName)
+	q.SetNonEmpty("hostgroup", g.HostGroup)
+	q.SetNonEmpty("servicegroup", g.ServiceGroup)
+	q.SetNonEmpty("servicedescription", g.ServiceDescription)
+	q.SetNonEmpty("contactname", g.ContactName)
+	q.SetNonEmpty("contactgroup", g.ContactGroup)
+	q.SetNonEmpty("notificationmethod", g.NotificationMethod)
+	q.SetNonEmpty("backtrackedarchives", g.BacktrackedArchives)
+
+	q.URLQuery.Set("starttime", strconv.FormatInt(g.StartTime, 10))
+	q.URLQuery.Set("endtime", strconv.FormatInt(g.EndTime, 10))
 
 	return q
 }
 
 type NotificationCountRequest struct {
-	notificationRequest
+	GeneralNotificationRequest
 }
 
 func (n NotificationCountRequest) Build() Query {
-	return n.build(false)
+	return n.build("notificationcount", false)
 }
 
 type NotificationListRequest struct {
-	notificationRequest
+	GeneralNotificationRequest
 }
 
 func (n NotificationListRequest) Build() Query {
-	return n.build(true)
+	return n.build("notificationlist", true)
 }
 
 type NotificationCountData struct {
@@ -415,10 +383,12 @@ type NotificationListEntry struct {
 	Method           string `json:"method"`
 	Message          string `json:"message"`
 }
+
 type NotificationListData struct {
 	Selectors        map[string]json.RawMessage `json:"selectors"`
 	NotificationList []NotificationListEntry    `json:"notificationlist"`
 }
+
 type NotificationList struct {
 	FormatVersion int                  `json:"format_version"`
 	Result        Result               `json:"result"`

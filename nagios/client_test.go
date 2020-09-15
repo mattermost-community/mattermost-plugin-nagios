@@ -129,7 +129,7 @@ type mockQueryBuilder struct{}
 func (m mockQueryBuilder) Build() Query {
 	return Query{
 		Endpoint: testEndpoint,
-		URLQuery: url.Values{"foo": []string{"bar"}},
+		URLQuery: url.Values{"foo": []string{"bar baz"}},
 	}
 }
 
@@ -141,7 +141,7 @@ func TestClient_Query(t *testing.T) {
 	want := response{ExampleField: "examplevalue"}
 
 	h := func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Query()["foo"][0] != "bar" {
+		if r.URL.RawQuery != "foo=bar+baz" {
 			t.Errorf("Request URL Query does not contain desired values")
 		}
 		if err := json.NewEncoder(w).Encode(want); err != nil {

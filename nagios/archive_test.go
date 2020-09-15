@@ -6,73 +6,6 @@ import (
 	"testing"
 )
 
-func Test_buildOptions(t *testing.T) {
-	tests := []struct {
-		name    string
-		options []string
-		want    string
-	}{
-		{
-			name:    "none",
-			options: nil,
-			want:    "",
-		},
-		{
-			name:    "some",
-			options: []string{"abc", "def"},
-			want:    "abc def",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := buildOptions(tt.options); got != tt.want {
-				t.Errorf("buildOptions() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestFormatOptions_String(t *testing.T) {
-	tests := []struct {
-		name          string
-		formatOptions FormatOptions
-		want          string
-	}{
-		{
-			name:          "none",
-			formatOptions: FormatOptions{},
-			want:          "",
-		},
-		{
-			name: "few",
-			formatOptions: FormatOptions{
-				Whitespace: true,
-				Enumerate:  false,
-				Bitmask:    true,
-				Duration:   false,
-			},
-			want: "whitespace bitmask",
-		},
-		{
-			name: "all",
-			formatOptions: FormatOptions{
-				Whitespace: true,
-				Enumerate:  true,
-				Bitmask:    true,
-				Duration:   true,
-			},
-			want: "whitespace enumerate bitmask duration",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.formatOptions.String(); got != tt.want {
-				t.Errorf("String() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestObjectTypes_String(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -85,12 +18,20 @@ func TestObjectTypes_String(t *testing.T) {
 			want:        "",
 		},
 		{
-			name: "few",
+			name: "host only",
 			objectTypes: ObjectTypes{
 				Host:    true,
 				Service: false,
 			},
 			want: "host",
+		},
+		{
+			name: "service only",
+			objectTypes: ObjectTypes{
+				Host:    false,
+				Service: true,
+			},
+			want: "service",
 		},
 		{
 			name: "all",
@@ -122,12 +63,20 @@ func TestStateTypes_String(t *testing.T) {
 			want:       "",
 		},
 		{
-			name: "few",
+			name: "soft only",
 			stateTypes: StateTypes{
 				Soft: true,
 				Hard: false,
 			},
 			want: "soft",
+		},
+		{
+			name: "hard only",
+			stateTypes: StateTypes{
+				Soft: false,
+				Hard: true,
+			},
+			want: "hard",
 		},
 		{
 			name: "all",
@@ -158,15 +107,7 @@ func TestHostStates_String(t *testing.T) {
 			hostStates: HostStates{},
 			want:       "",
 		},
-		{
-			name: "few",
-			hostStates: HostStates{
-				Up:          true,
-				Down:        false,
-				Unreachable: true,
-			},
-			want: "up unreachable",
-		},
+		// TODO(amwolff): add test cases.
 		{
 			name: "all",
 			hostStates: HostStates{
@@ -197,16 +138,7 @@ func TestServiceStates_String(t *testing.T) {
 			serviceStates: ServiceStates{},
 			want:          "",
 		},
-		{
-			name: "few",
-			serviceStates: ServiceStates{
-				Ok:       true,
-				Warning:  false,
-				Critical: true,
-				Unknown:  false,
-			},
-			want: "ok critical",
-		},
+		// TODO(amwolff): add test cases.
 		{
 			name: "all",
 			serviceStates: ServiceStates{
@@ -227,17 +159,24 @@ func TestServiceStates_String(t *testing.T) {
 	}
 }
 
-func Test_alertRequest_build(t *testing.T) {
-	tests := []struct {
-		name              string
-		alertRequest      alertRequest
+func TestGeneralAlertRequest_build(t *testing.T) {
+	type args struct {
+		query             string
 		includeStartCount bool
-		want              Query
+	}
+	tests := []struct {
+		name                string
+		generalAlertRequest GeneralAlertRequest
+		args                args
+		want                Query
 	}{
 		{
-			name:              "none",
-			alertRequest:      alertRequest{},
-			includeStartCount: false,
+			name:                "blank",
+			generalAlertRequest: GeneralAlertRequest{},
+			args: args{
+				query:             "",
+				includeStartCount: false,
+			},
 			want: Query{
 				Endpoint: archiveEndpoint,
 				URLQuery: url.Values{
@@ -247,14 +186,17 @@ func Test_alertRequest_build(t *testing.T) {
 			},
 		},
 		{
-			name:              "none with Start and Count",
-			alertRequest:      alertRequest{},
-			includeStartCount: true,
+			name:                "blank with Start and Count",
+			generalAlertRequest: GeneralAlertRequest{Count: 1},
+			args: args{
+				query:             "",
+				includeStartCount: true,
+			},
 			want: Query{
 				Endpoint: archiveEndpoint,
 				URLQuery: url.Values{
 					"start":     []string{"0"},
-					"count":     []string{"0"},
+					"count":     []string{"1"},
 					"starttime": []string{"0"},
 					"endtime":   []string{"0"},
 				},
@@ -263,8 +205,71 @@ func Test_alertRequest_build(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.alertRequest.build(tt.includeStartCount); !reflect.DeepEqual(got, tt.want) {
+			if got := tt.generalAlertRequest.build(tt.args.query, tt.args.includeStartCount); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("build() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAlertCountRequest_Build(t *testing.T) {
+	tests := []struct {
+		name                string
+		GeneralAlertRequest GeneralAlertRequest
+		want                Query
+	}{
+		{
+			name:                "blank",
+			GeneralAlertRequest: GeneralAlertRequest{},
+			want: Query{
+				Endpoint: archiveEndpoint,
+				URLQuery: url.Values{
+					"query":     []string{"alertcount"},
+					"starttime": []string{"0"},
+					"endtime":   []string{"0"},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := AlertCountRequest{
+				GeneralAlertRequest: tt.GeneralAlertRequest,
+			}
+			if got := a.Build(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Build() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAlertListRequest_Build(t *testing.T) {
+	tests := []struct {
+		name                string
+		GeneralAlertRequest GeneralAlertRequest
+		want                Query
+	}{
+		{
+			name:                "blank",
+			GeneralAlertRequest: GeneralAlertRequest{},
+			want: Query{
+				Endpoint: archiveEndpoint,
+				URLQuery: url.Values{
+					"query":     []string{"alertlist"},
+					"start":     []string{"0"},
+					"starttime": []string{"0"},
+					"endtime":   []string{"0"},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := AlertListRequest{
+				GeneralAlertRequest: tt.GeneralAlertRequest,
+			}
+			if got := a.Build(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Build() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -281,20 +286,7 @@ func TestHostNotificationTypes_String(t *testing.T) {
 			hostNotificationTypes: HostNotificationTypes{},
 			want:                  "",
 		},
-		{
-			name: "few",
-			hostNotificationTypes: HostNotificationTypes{
-				NoData:        true,
-				Down:          false,
-				Unreachable:   true,
-				Recovery:      false,
-				HostCustom:    true,
-				HostAck:       false,
-				HostFlapStart: true,
-				HostFlapStop:  false,
-			},
-			want: "nodata unreachable hostcustom hostflapstart",
-		},
+		// TODO(amwolff): add test cases.
 		{
 			name: "all",
 			hostNotificationTypes: HostNotificationTypes{
@@ -330,21 +322,7 @@ func TestServiceNotificationTypes_String(t *testing.T) {
 			serviceNotificationTypes: ServiceNotificationTypes{},
 			want:                     "",
 		},
-		{
-			name: "few",
-			serviceNotificationTypes: ServiceNotificationTypes{
-				NoData:           true,
-				Critical:         false,
-				Warning:          true,
-				Recovery:         false,
-				Custom:           true,
-				ServiceAck:       false,
-				ServiceFlapStart: true,
-				ServiceFlapStop:  false,
-				Unknown:          true,
-			},
-			want: "nodata warning custom serviceflapstart unknown",
-		},
+		// TODO(amwolff): add test cases.
 		{
 			name: "all",
 			serviceNotificationTypes: ServiceNotificationTypes{
@@ -370,17 +348,24 @@ func TestServiceNotificationTypes_String(t *testing.T) {
 	}
 }
 
-func Test_notificationRequest_build(t *testing.T) {
+func TestGeneralNotificationRequest_build(t *testing.T) {
+	type args struct {
+		query             string
+		includeStartCount bool
+	}
 	tests := []struct {
-		name                string
-		notificationRequest notificationRequest
-		includeStartCount   bool
-		want                Query
+		name                       string
+		generalNotificationRequest GeneralNotificationRequest
+		args                       args
+		want                       Query
 	}{
 		{
-			name:                "none",
-			notificationRequest: notificationRequest{},
-			includeStartCount:   false,
+			name:                       "blank",
+			generalNotificationRequest: GeneralNotificationRequest{},
+			args: args{
+				query:             "",
+				includeStartCount: false,
+			},
 			want: Query{
 				Endpoint: archiveEndpoint,
 				URLQuery: url.Values{
@@ -390,14 +375,17 @@ func Test_notificationRequest_build(t *testing.T) {
 			},
 		},
 		{
-			name:                "none with Start and Count",
-			notificationRequest: notificationRequest{},
-			includeStartCount:   true,
+			name:                       "blank with Start and Count",
+			generalNotificationRequest: GeneralNotificationRequest{Count: 1},
+			args: args{
+				query:             "",
+				includeStartCount: true,
+			},
 			want: Query{
 				Endpoint: archiveEndpoint,
 				URLQuery: url.Values{
 					"start":     []string{"0"},
-					"count":     []string{"0"},
+					"count":     []string{"1"},
 					"starttime": []string{"0"},
 					"endtime":   []string{"0"},
 				},
@@ -406,8 +394,48 @@ func Test_notificationRequest_build(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.notificationRequest.build(tt.includeStartCount); !reflect.DeepEqual(got, tt.want) {
+			if got := tt.generalNotificationRequest.build(tt.args.query, tt.args.includeStartCount); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("build() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNotificationCountRequest_Build(t *testing.T) {
+	tests := []struct {
+		name                       string
+		GeneralNotificationRequest GeneralNotificationRequest
+		want                       Query
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := NotificationCountRequest{
+				GeneralNotificationRequest: tt.GeneralNotificationRequest,
+			}
+			if got := n.Build(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Build() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNotificationListRequest_Build(t *testing.T) {
+	tests := []struct {
+		name                       string
+		GeneralNotificationRequest GeneralNotificationRequest
+		want                       Query
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := NotificationListRequest{
+				GeneralNotificationRequest: tt.GeneralNotificationRequest,
+			}
+			if got := n.Build(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Build() = %v, want %v", got, tt.want)
 			}
 		})
 	}
