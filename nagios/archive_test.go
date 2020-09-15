@@ -407,7 +407,18 @@ func TestNotificationCountRequest_Build(t *testing.T) {
 		GeneralNotificationRequest GeneralNotificationRequest
 		want                       Query
 	}{
-		// TODO: Add test cases.
+		{
+			name:                       "blank",
+			GeneralNotificationRequest: GeneralNotificationRequest{},
+			want: Query{
+				Endpoint: archiveEndpoint,
+				URLQuery: url.Values{
+					"query":     []string{"notificationcount"},
+					"starttime": []string{"0"},
+					"endtime":   []string{"0"},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -427,7 +438,19 @@ func TestNotificationListRequest_Build(t *testing.T) {
 		GeneralNotificationRequest GeneralNotificationRequest
 		want                       Query
 	}{
-		// TODO: Add test cases.
+		{
+			name:                       "blank",
+			GeneralNotificationRequest: GeneralNotificationRequest{},
+			want: Query{
+				Endpoint: archiveEndpoint,
+				URLQuery: url.Values{
+					"query":     []string{"notificationlist"},
+					"start":     []string{"0"},
+					"starttime": []string{"0"},
+					"endtime":   []string{"0"},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
