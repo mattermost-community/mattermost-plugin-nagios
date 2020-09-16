@@ -47,7 +47,15 @@ func (c Client) Query(b QueryBuilder, v interface{}) error {
 	}
 	defer res.Body.Close()
 
-	if err := json.NewDecoder(res.Body).Decode(v); err != nil {
+	if res.StatusCode != http.StatusOK {
+		// io.Copy(ioutil.Discard, res.Body)
+		return fmt.Errorf("non-200 respone status code (%d)", res.StatusCode)
+	}
+
+	d := json.NewDecoder(res.Body)
+	d.DisallowUnknownFields()
+
+	if err := d.Decode(v); err != nil {
 		return fmt.Errorf("Decode: %w", err)
 	}
 

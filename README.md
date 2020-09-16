@@ -2,7 +2,7 @@ Nagios Core API client
 ======================
 
 This is a Go client for the Nagios Core API that can communicate with the Nagios Core JSON CGIs.
-It's the programmatic equivalent of the `<instance address>/nagios/jsonquery.html`.
+It's the programmatic equivalent of the `<nagios>/nagios/jsonquery.html`.
 
 ## Installation
 
@@ -68,4 +68,4 @@ It's the programmatic equivalent of the `<instance address>/nagios/jsonquery.htm
 
 ## Compatibility
 
-Tested with Nagios Core 4.4.6
+Tested with Nagios Core 4.4.x
