@@ -378,6 +378,7 @@ type NotificationListEntry struct {
 	ObjectType       string `json:"object_type"`
 	HostName         string `json:"host_name"`
 	Description      string `json:"description"`
+	Name             string `json:"name"`
 	Contact          string `json:"contact"`
 	NotificationType string `json:"notification_type"`
 	Method           string `json:"method"`
