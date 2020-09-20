@@ -15,16 +15,17 @@ const (
 	dumpResponse = false
 )
 
-func TestArchive(t *testing.T) {
-	address := testInstanceAddress
-
+func addr(t *testing.T, address string) string {
 	if len(address) == 0 {
 		if address = os.Getenv("TEST_INSTANCE_ADDRESS"); len(address) == 0 {
 			t.Skip()
 		}
 	}
+	return address
+}
 
-	c, err := nagios.NewClient(http.DefaultClient, address)
+func TestArchive(t *testing.T) {
+	c, err := nagios.NewClient(http.DefaultClient, addr(t, testInstanceAddress))
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)
 	}
@@ -134,7 +135,7 @@ func TestArchive(t *testing.T) {
 
 	t.Run("blank alert list with options switched", func(t *testing.T) {
 		req := nagios.AlertListRequest{
-			nagios.GeneralAlertRequest{
+			GeneralAlertRequest: nagios.GeneralAlertRequest{
 				FormatOptions: nagios.FormatOptions{
 					Whitespace: true,
 					Enumerate:  true,
