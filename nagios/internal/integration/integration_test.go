@@ -2,6 +2,7 @@ package integration
 
 import (
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -15,11 +16,15 @@ const (
 )
 
 func TestArchive(t *testing.T) {
-	if len(testInstanceAddress) == 0 {
-		t.Skip()
+	address := testInstanceAddress
+
+	if len(address) == 0 {
+		if address = os.Getenv("TEST_INSTANCE_ADDRESS"); len(address) == 0 {
+			t.Skip()
+		}
 	}
 
-	c, err := nagios.NewClient(http.DefaultClient, testInstanceAddress)
+	c, err := nagios.NewClient(http.DefaultClient, address)
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)
 	}
