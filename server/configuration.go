@@ -23,7 +23,7 @@ type configuration struct {
 
 func (c *configuration) isValid() error {
 	if len(c.NagiosURL) == 0 {
-		return errors.New("Nagios URL must best set")
+		return errors.New("the Nagios URL must best set")
 	}
 	return nil
 }

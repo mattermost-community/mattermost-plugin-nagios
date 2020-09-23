@@ -42,7 +42,7 @@ func (p *Plugin) OnActivate() error {
 
 	c, err := nagios.NewClient(http.DefaultClient, config.NagiosURL)
 	if err != nil {
-		return fmt.Errorf("NewClient: %w", err)
+		return fmt.Errorf("nagios.NewClient: %w", err)
 	}
 
 	p.client = c
@@ -53,27 +53,27 @@ func (p *Plugin) OnActivate() error {
 		Description: "Created by the Nagios Plugin.",
 	})
 	if err != nil {
-		return fmt.Errorf("EnsureBot: %w", err)
+		return fmt.Errorf("p.Helpers.EnsureBot: %w", err)
 	}
 
 	p.botUserID = botUserID
 
 	bundlePath, err := p.API.GetBundlePath()
 	if err != nil {
-		return fmt.Errorf("GetBundlePath: %w", err)
+		return fmt.Errorf("p.API.GetBundlePath: %w", err)
 	}
 
 	profileImage, err := ioutil.ReadFile(filepath.Join(bundlePath, "assets", "nagios.png"))
 	if err != nil {
-		return fmt.Errorf("ReadFile: %w", err)
+		return fmt.Errorf("ioutil.ReadFile: %w", err)
 	}
 
 	if err := p.API.SetProfileImage(botUserID, profileImage); err != nil {
-		return fmt.Errorf("SetProfileImage: %w", err)
+		return fmt.Errorf("p.API.SetProfileImage: %w", err)
 	}
 
 	if err := p.API.RegisterCommand(nagiosCommand); err != nil {
-		return fmt.Errorf("RegisterCommand: %w", err)
+		return fmt.Errorf("p.API.RegisterCommand: %w", err)
 	}
 
 	return nil

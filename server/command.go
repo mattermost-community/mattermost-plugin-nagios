@@ -8,21 +8,34 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 )
 
-const helpText = ``
+func getAutoCompleteDesc(m map[string]commandHandlerFunc) string {
+	var b strings.Builder
+
+	b.WriteString("Available commands: ")
+
+	var i int
+	for k := range m {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(k)
+	}
+
+	return b.String()
+}
 
 var nagiosCommand = &model.Command{
 	Trigger:          "nagios",
-	Description:      "A Mattermost plugin to interact with Nagios",
-	DisplayName:      "Nagios",
 	AutoComplete:     true,
-	AutoCompleteDesc: "Available commands: get-log",
+	AutoCompleteDesc: getAutoCompleteDesc(commandHandlers),
 	AutoCompleteHint: "[command]",
+	DisplayName:      "Nagios",
+	Description:      "A Mattermost plugin to interact with Nagios",
 }
 
 func parseCommandArgs(args *model.CommandArgs) (
 	command, action string,
 	parameters []string) {
-
 	fields := strings.Fields(args.Command)
 
 	if len(fields) > 0 {
@@ -47,17 +60,19 @@ func (p *Plugin) getCommandResponse(args *model.CommandArgs, text string) *model
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-	command, action, parameteres := parseCommandArgs(args)
+	command, action, parameters := parseCommandArgs(args)
 
 	if command != "/nagios" {
 		return &model.CommandResponse{}, nil
 	}
 
+	var msg string
+
 	if f, ok := commandHandlers[action]; ok {
-		msg := f(p.client, parameteres)
-		return p.getCommandResponse(args, msg), nil
+		msg = f(p.client, parameters)
+	} else {
+		msg = fmt.Sprintf("Unknown action %s", action)
 	}
 
-	msg := fmt.Sprintf("Unknown action %s", action)
 	return p.getCommandResponse(args, msg), nil
 }

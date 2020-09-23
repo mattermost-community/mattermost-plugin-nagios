@@ -11,61 +11,29 @@ import (
 type commandHandlerFunc func(client *nagios.Client, parameters []string) string
 
 var commandHandlers = map[string]commandHandlerFunc{
-	"get-logs": getLogs,
-}
-
-func getLogsSpecific(parameters []string) (
-	host, service bool,
-	hostName, serviceDescription string) {
-
-	if len(parameters) > 0 {
-		switch parameters[0] {
-		case "host":
-			if len(parameters) > 1 {
-				return true, false, parameters[1], ""
-			}
-		case "service":
-			if len(parameters) > 1 {
-				return false, true, "", parameters[1]
-			}
-		}
-	}
-
-	return false, false, "", ""
+	"get-logs":             getLogs,
+	"set-logs-limit":       nil,
+	"set-logs-start-time":  nil,
+	"help":                 nil,
+	"set-report-frequency": nil,
 }
 
 const (
 	resultTypeTextSuccess = "Success"
-	errorMessage          = "Getting logs unsuccessful: %v"
-	logsFrom              = 24 * time.Hour
-	maxLogs               = 100
+	defaultLogsFrom       = 24 * time.Hour
+	defaultMaxLogs        = 100
 )
 
-func formatAlerts(alerts nagios.AlertList) string {
-	if alerts.Result.TypeText != resultTypeTextSuccess {
-		return fmt.Sprintf(errorMessage, alerts.Result.Message)
-	}
+func errorMessage(message interface{}) string {
+	return fmt.Sprintf("Getting logs unsuccessful: %v.", message)
+}
 
-	if len(alerts.Data.AlertList) == 0 {
-		return "No alerts."
-	}
+func unknownParameterMessage(parameter string) string {
+	return fmt.Sprintf("Unknown parameter (%s).", parameter)
+}
 
-	var b strings.Builder
-
-	for _, a := range alerts.Data.AlertList {
-		line := fmt.Sprintf("[%s] [%s] [%s] [%s] [%s] [%s] %s\n",
-			time.Unix(a.Timestamp/1000, 0).String(),
-			a.ObjectType,
-			a.HostName,
-			a.Description,
-			a.StateType,
-			a.State,
-			a.PluginOutput)
-
-		b.WriteString(line)
-	}
-
-	return b.String()
+func formatNagiosTimestamp(t int64) string {
+	return time.Unix(t/1000, 0).String()
 }
 
 func extractHostName(e nagios.NotificationListEntry) string {
@@ -75,9 +43,55 @@ func extractHostName(e nagios.NotificationListEntry) string {
 	return e.HostName
 }
 
+// TODO(amwolff, DanielSz50): rewrite formatAlertListEntry (mimic showlog.cgi).
+func formatAlertListEntry(e nagios.AlertListEntry) string {
+	return fmt.Sprintf("[%s] [%s] [%s] [%s] [%s] [%s] %s",
+		formatNagiosTimestamp(e.Timestamp),
+		e.ObjectType,
+		e.HostName,
+		e.Description,
+		e.StateType,
+		e.State,
+		e.PluginOutput)
+}
+
+func formatAlerts(alerts nagios.AlertList) string {
+	if alerts.Result.TypeText != resultTypeTextSuccess {
+		return errorMessage(alerts.Result.Message)
+	}
+
+	if len(alerts.Data.AlertList) == 0 {
+		return "No alerts."
+	}
+
+	var b strings.Builder
+
+	for i, v := range alerts.Data.AlertList {
+		if i > 0 {
+			b.WriteRune('\n')
+		}
+		b.WriteString(formatAlertListEntry(v))
+	}
+
+	return b.String()
+}
+
+// TODO(amwolff, DanielSz50): rewrite formatNotificationListEntry (mimic showlog.cgi).
+func formatNotificationListEntry(e nagios.NotificationListEntry) string {
+	return fmt.Sprintf("[%s] [%s] [%s] [%s] [%s] [%s] [%s] %s",
+		formatNagiosTimestamp(e.Timestamp),
+		e.ObjectType,
+		extractHostName(e),
+		e.Description,
+		e.Contact,
+		e.NotificationType,
+		e.Method,
+		e.Message)
+}
+
 func formatNotifications(notifications nagios.NotificationList) string {
 	if notifications.Result.TypeText != resultTypeTextSuccess {
-		return fmt.Sprintf(errorMessage, notifications.Result.Message)
+		return errorMessage(notifications.Result.Message)
 	}
 
 	if len(notifications.Data.NotificationList) == 0 {
@@ -86,18 +100,11 @@ func formatNotifications(notifications nagios.NotificationList) string {
 
 	var b strings.Builder
 
-	for _, n := range notifications.Data.NotificationList {
-		line := fmt.Sprintf("[%s] [%s] [%s] [%s] [%s] [%s] [%s] %s\n",
-			time.Unix(n.Timestamp/1000, 0).String(),
-			n.ObjectType,
-			extractHostName(n),
-			n.Description,
-			n.Contact,
-			n.NotificationType,
-			n.Method,
-			n.Message)
-
-		b.WriteString(line)
+	for i, v := range notifications.Data.NotificationList {
+		if i > 0 {
+			b.WriteRune('\n')
+		}
+		b.WriteString(formatNotificationListEntry(v))
 	}
 
 	return b.String()
@@ -108,15 +115,39 @@ func formatNotifications(notifications nagios.NotificationList) string {
 // get-log notifications <host>    <URL>
 // get-log notifications <service> <SVC>
 
+func getLogsSpecific(parameters []string) (hostName, serviceDescription, message string, ok bool) {
+	if len(parameters) == 0 {
+		return "", "", "", true
+	}
+
+	switch parameters[0] {
+	case "host":
+		if len(parameters) < 2 {
+			return "", "", "You must supply host name.", false
+		}
+		return parameters[1], "", "", true
+	case "service":
+		if len(parameters) < 2 {
+			return "", "", "You must supply service description.", false
+		}
+		return "", parameters[1], "", true
+	default:
+		return "", "", unknownParameterMessage(parameters[0]), false
+	}
+}
+
 func getLogs(client *nagios.Client, parameters []string) string {
 	if len(parameters) == 0 {
-		return "You must supply at least one parameter (alerts|notifications)"
+		return "You must supply at least one parameter (alerts|notifications)."
+	}
+
+	hostName, serviceDescription, message, ok := getLogsSpecific(parameters[1:])
+	if !ok {
+		return message
 	}
 
 	now := time.Now()
-	then := now.Add(-logsFrom)
-
-	host, service, hostName, serviceDescription := getLogsSpecific(parameters[1:])
+	then := now.Add(-defaultLogsFrom)
 
 	switch parameters[0] {
 	case "alerts":
@@ -125,11 +156,7 @@ func getLogs(client *nagios.Client, parameters []string) string {
 				FormatOptions: nagios.FormatOptions{
 					Enumerate: true,
 				},
-				Count: maxLogs,
-				ObjectTypes: nagios.ObjectTypes{
-					Host:    host,
-					Service: service,
-				},
+				Count:              defaultMaxLogs,
 				HostName:           hostName,
 				ServiceDescription: serviceDescription,
 				StartTime:          then.Unix(),
@@ -138,7 +165,7 @@ func getLogs(client *nagios.Client, parameters []string) string {
 		}
 		var alerts nagios.AlertList
 		if err := client.Query(q, &alerts); err != nil {
-			return fmt.Sprintf(errorMessage, err)
+			return errorMessage(err)
 		}
 		return formatAlerts(alerts)
 	case "notifications":
@@ -147,11 +174,7 @@ func getLogs(client *nagios.Client, parameters []string) string {
 				FormatOptions: nagios.FormatOptions{
 					Enumerate: true,
 				},
-				Count: maxLogs,
-				ObjectTypes: nagios.ObjectTypes{
-					Host:    host,
-					Service: service,
-				},
+				Count:              defaultMaxLogs,
 				HostName:           hostName,
 				ServiceDescription: serviceDescription,
 				StartTime:          then.Unix(),
@@ -160,10 +183,10 @@ func getLogs(client *nagios.Client, parameters []string) string {
 		}
 		var notifications nagios.NotificationList
 		if err := client.Query(q, &notifications); err != nil {
-			return fmt.Sprintf(errorMessage, err)
+			return errorMessage(err)
 		}
 		return formatNotifications(notifications)
 	default:
-		return fmt.Sprintf("Unknown parameter %s", parameters[0])
+		return unknownParameterMessage(parameters[0])
 	}
 }
