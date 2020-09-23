@@ -12,10 +12,10 @@ var manifest *model.Manifest
 
 const manifestStr = `
 {
-  "id": "com.mattermost.plugin-starter-template",
-  "name": "Plugin Starter Template",
-  "description": "This plugin serves as a starting point for writing a Mattermost plugin.",
-  "version": "0.1.0",
+  "id": "nagios",
+  "name": "Nagios",
+  "description": "Nagios plugin for Mattermost",
+  "version": "1.0.0",
   "min_server_version": "5.12.0",
   "server": {
     "executables": {
@@ -25,13 +25,19 @@ const manifestStr = `
     },
     "executable": ""
   },
-  "webapp": {
-    "bundle_path": "webapp/dist/main.js"
-  },
   "settings_schema": {
-    "header": "",
+    "header": "To report an issue, make a suggestion or a contribution, or fork your own version of the plugin, [check the repository](https://github.com/ulumuri/mattermost-plugin-nagios).",
     "footer": "",
-    "settings": []
+    "settings": [
+      {
+        "key": "NagiosURL",
+        "display_name": "Nagios URL",
+        "type": "text",
+        "help_text": "The URL for your Nagios instance. Must start with http:// or https://. For example: https://nagios.example.com.",
+        "placeholder": "",
+        "default": null
+      }
+    ]
   }
 }
 `
