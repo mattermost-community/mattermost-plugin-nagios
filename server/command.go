@@ -69,9 +69,9 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	var msg string
 
 	if f, ok := commandHandlers[action]; ok {
-		msg = f(p.client, parameters)
+		msg = f(p.API, p.client, parameters)
 	} else {
-		msg = fmt.Sprintf("Unknown action %s", action)
+		msg = fmt.Sprintf("Unknown action (%s).", action)
 	}
 
 	return p.getCommandResponse(args, msg), nil

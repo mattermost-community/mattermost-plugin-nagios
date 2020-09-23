@@ -1,39 +1,136 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/ulumuri/go-nagios/nagios"
 )
 
-type commandHandlerFunc func(client *nagios.Client, parameters []string) string
+type commandHandlerFunc func(api plugin.API, client *nagios.Client, parameters []string) string
 
+// TODO(amwolff): get rid of commandHandlers as a global.
 var commandHandlers = map[string]commandHandlerFunc{
-	"get-logs":             getLogs,
-	"set-logs-limit":       nil,
-	"set-logs-start-time":  nil,
 	"help":                 nil,
+	"set-logs-limit":       setLogsLimit,
+	"set-logs-start-time":  setLogsStartTime,
+	"get-logs":             getLogs,
 	"set-report-frequency": nil,
 }
 
 const (
-	resultTypeTextSuccess = "Success"
-	defaultLogsFrom       = 24 * time.Hour
-	defaultMaxLogs        = 100
+	logErrorKey = "error"
+
+	settingLogsLimitUnsuccessful = "Setting logs limit unsuccessful."
+	logsLimitKey                 = "logs-limit"
+	defaultLogsLimit             = 50
+
+	settingLogsStartTimeUnsuccessful = "Setting logs start time unsuccessful."
+	logsStartTimeKey                 = "logs-start-time"
+	defaultLogsFrom                  = 24 * time.Hour
+
+	gettingLogsUnsuccessful = "Getting logs unsuccessful"
+	resultTypeTextSuccess   = "Success"
 )
 
-func errorMessage(message interface{}) string {
-	return fmt.Sprintf("Getting logs unsuccessful: %v.", message)
+func getLogsLimit(api plugin.API) (int, error) {
+	b, err := api.KVGet(logsLimitKey)
+	if err != nil {
+		return 0, fmt.Errorf("api.KVGet: %w", err)
+	}
+
+	var limit int
+
+	if err := json.Unmarshal(b, &limit); err != nil {
+		return 0, fmt.Errorf("json.Unmarshal: %w", err)
+	}
+
+	if limit <= 0 {
+		return defaultLogsLimit, nil
+	}
+
+	return limit, nil
 }
 
-func unknownParameterMessage(parameter string) string {
-	return fmt.Sprintf("Unknown parameter (%s).", parameter)
+func setLogsLimit(api plugin.API, client *nagios.Client, parameters []string) string {
+	if len(parameters) != 1 {
+		return "You must supply exactly one parameter (integer value)."
+	}
+
+	i, err := strconv.Atoi(parameters[0])
+	if err != nil {
+		api.LogError("Atoi", logErrorKey, err)
+		return settingLogsLimitUnsuccessful
+	}
+
+	b, err := json.Marshal(i)
+	if err != nil {
+		api.LogError("Marshal", logErrorKey, err)
+		return settingLogsLimitUnsuccessful
+	}
+
+	if err := api.KVSet(logsLimitKey, b); err != nil {
+		api.LogError("KVSet", logErrorKey, err)
+		return settingLogsLimitUnsuccessful
+	}
+
+	return "Limit set successfully."
 }
 
+func getLogsStartTime(api plugin.API) (time.Duration, error) {
+	b, err := api.KVGet(logsStartTimeKey)
+	if err != nil {
+		return 0, fmt.Errorf("api.KVGet: %w", err)
+	}
+
+	var seconds int64
+
+	if err := json.Unmarshal(b, &seconds); err != nil {
+		return 0, fmt.Errorf("json.Unmarshal: %w", err)
+	}
+
+	if seconds <= 0 {
+		return defaultLogsFrom, nil
+	}
+
+	return time.Duration(seconds) * time.Second, nil
+}
+
+func setLogsStartTime(api plugin.API, client *nagios.Client, parameters []string) string {
+	if len(parameters) != 1 {
+		return "You must supply exactly one parameter (number of seconds)."
+	}
+
+	i, err := strconv.ParseInt(parameters[0], 10, 64)
+	if err != nil {
+		api.LogError("ParseInt", logErrorKey, err)
+		return settingLogsStartTimeUnsuccessful
+	}
+
+	b, err := json.Marshal(i)
+	if err != nil {
+		api.LogError("Marshal", logErrorKey, err)
+		return settingLogsStartTimeUnsuccessful
+	}
+
+	if err := api.KVSet(logsStartTimeKey, b); err != nil {
+		api.LogError("KVSet", logErrorKey, err)
+		return settingLogsStartTimeUnsuccessful
+	}
+
+	return "Start time set successfully."
+}
+
+// formatNagiosTimestamp formats the timestamp from Nagios Core JSON CGIs
+// output. These CGIs return the number of milliseconds since the Unix Epoch
+// (hence division by 1000). This is contrary to what these CGIs consume, which
+// is the _number of seconds_ since the Unix Epoch.
 func formatNagiosTimestamp(t int64) string {
-	return time.Unix(t/1000, 0).String()
+	return time.Unix(t/1e3, 0).String()
 }
 
 func extractHostName(e nagios.NotificationListEntry) string {
@@ -41,6 +138,14 @@ func extractHostName(e nagios.NotificationListEntry) string {
 		return e.Name
 	}
 	return e.HostName
+}
+
+func gettingLogsUnsuccessfulMessage(message string) string {
+	return fmt.Sprintf("%s: %s", gettingLogsUnsuccessful, message)
+}
+
+func unknownParameterMessage(parameter string) string {
+	return fmt.Sprintf("Unknown parameter (%s).", parameter)
 }
 
 // TODO(amwolff, DanielSz50): rewrite formatAlertListEntry (mimic showlog.cgi).
@@ -57,7 +162,7 @@ func formatAlertListEntry(e nagios.AlertListEntry) string {
 
 func formatAlerts(alerts nagios.AlertList) string {
 	if alerts.Result.TypeText != resultTypeTextSuccess {
-		return errorMessage(alerts.Result.Message)
+		return gettingLogsUnsuccessfulMessage(alerts.Result.TypeText)
 	}
 
 	if len(alerts.Data.AlertList) == 0 {
@@ -91,7 +196,7 @@ func formatNotificationListEntry(e nagios.NotificationListEntry) string {
 
 func formatNotifications(notifications nagios.NotificationList) string {
 	if notifications.Result.TypeText != resultTypeTextSuccess {
-		return errorMessage(notifications.Result.Message)
+		return gettingLogsUnsuccessfulMessage(notifications.Result.TypeText)
 	}
 
 	if len(notifications.Data.NotificationList) == 0 {
@@ -110,10 +215,13 @@ func formatNotifications(notifications nagios.NotificationList) string {
 	return b.String()
 }
 
-// get-log alerts        <host>    <URL>
-// get-log alerts        <service> <SVC>
-// get-log notifications <host>    <URL>
-// get-log notifications <service> <SVC>
+// Cheat sheet:
+//
+// [command] [action]      [parameters...]
+// get-log   alerts        <host>    <URL>
+// get-log   alerts        <service> <SVC>
+// get-log   notifications <host>    <URL>
+// get-log   notifications <service> <SVC>
 
 func getLogsSpecific(parameters []string) (hostName, serviceDescription, message string, ok bool) {
 	if len(parameters) == 0 {
@@ -136,7 +244,7 @@ func getLogsSpecific(parameters []string) (hostName, serviceDescription, message
 	}
 }
 
-func getLogs(client *nagios.Client, parameters []string) string {
+func getLogs(api plugin.API, client *nagios.Client, parameters []string) string {
 	if len(parameters) == 0 {
 		return "You must supply at least one parameter (alerts|notifications)."
 	}
@@ -146,8 +254,20 @@ func getLogs(client *nagios.Client, parameters []string) string {
 		return message
 	}
 
+	l, err := getLogsLimit(api)
+	if err != nil {
+		api.LogError("getLogsLimit", logErrorKey, err)
+		return gettingLogsUnsuccessful
+	}
+
+	d, err := getLogsStartTime(api)
+	if err != nil {
+		api.LogError("getLogsStartTime", logErrorKey, err)
+		return gettingLogsUnsuccessful
+	}
+
 	now := time.Now()
-	then := now.Add(-defaultLogsFrom)
+	then := now.Add(-d)
 
 	switch parameters[0] {
 	case "alerts":
@@ -156,7 +276,7 @@ func getLogs(client *nagios.Client, parameters []string) string {
 				FormatOptions: nagios.FormatOptions{
 					Enumerate: true,
 				},
-				Count:              defaultMaxLogs,
+				Count:              l,
 				HostName:           hostName,
 				ServiceDescription: serviceDescription,
 				StartTime:          then.Unix(),
@@ -165,7 +285,8 @@ func getLogs(client *nagios.Client, parameters []string) string {
 		}
 		var alerts nagios.AlertList
 		if err := client.Query(q, &alerts); err != nil {
-			return errorMessage(err)
+			api.LogError("Query", logErrorKey, err)
+			return gettingLogsUnsuccessful
 		}
 		return formatAlerts(alerts)
 	case "notifications":
@@ -174,7 +295,7 @@ func getLogs(client *nagios.Client, parameters []string) string {
 				FormatOptions: nagios.FormatOptions{
 					Enumerate: true,
 				},
-				Count:              defaultMaxLogs,
+				Count:              l,
 				HostName:           hostName,
 				ServiceDescription: serviceDescription,
 				StartTime:          then.Unix(),
@@ -183,7 +304,8 @@ func getLogs(client *nagios.Client, parameters []string) string {
 		}
 		var notifications nagios.NotificationList
 		if err := client.Query(q, &notifications); err != nil {
-			return errorMessage(err)
+			api.LogError("Query", logErrorKey, err)
+			return gettingLogsUnsuccessful
 		}
 		return formatNotifications(notifications)
 	default:
