@@ -19,7 +19,7 @@ var commandHandlers = map[string]commandHandlerFunc{
 	"set-logs-limit":       setLogsLimit,
 	"set-logs-start-time":  setLogsStartTime,
 	"get-logs":             getLogs,
-	"set-report-frequency": nil,
+	"set-report-frequency": setReportFrequency,
 }
 
 const (
@@ -35,6 +35,10 @@ const (
 
 	gettingLogsUnsuccessful = "Getting logs unsuccessful"
 	resultTypeTextSuccess   = "Success"
+
+	settingReportFrequencyUnsuccessful = "Setting report frequency unsuccessful."
+	reportFrequencyKey                 = "report-frequency"
+	defaultReportFrequency             = 10 * time.Minute
 )
 
 func getLogsLimit(api plugin.API) (int, error) {
@@ -249,15 +253,15 @@ func getLogs(api plugin.API, client *nagios.Client, parameters []string) string 
 		return "You must supply at least one parameter (alerts|notifications)."
 	}
 
-	hostName, serviceDescription, message, ok := getLogsSpecific(parameters[1:])
-	if !ok {
-		return message
-	}
-
-	l, err := getLogsLimit(api)
+	c, err := getLogsLimit(api)
 	if err != nil {
 		api.LogError("getLogsLimit", logErrorKey, err)
 		return gettingLogsUnsuccessful
+	}
+
+	hostName, serviceDescription, message, ok := getLogsSpecific(parameters[1:])
+	if !ok {
+		return message
 	}
 
 	d, err := getLogsStartTime(api)
@@ -276,7 +280,7 @@ func getLogs(api plugin.API, client *nagios.Client, parameters []string) string 
 				FormatOptions: nagios.FormatOptions{
 					Enumerate: true,
 				},
-				Count:              l,
+				Count:              c,
 				HostName:           hostName,
 				ServiceDescription: serviceDescription,
 				StartTime:          then.Unix(),
@@ -295,7 +299,7 @@ func getLogs(api plugin.API, client *nagios.Client, parameters []string) string 
 				FormatOptions: nagios.FormatOptions{
 					Enumerate: true,
 				},
-				Count:              l,
+				Count:              c,
 				HostName:           hostName,
 				ServiceDescription: serviceDescription,
 				StartTime:          then.Unix(),
@@ -311,4 +315,48 @@ func getLogs(api plugin.API, client *nagios.Client, parameters []string) string 
 	default:
 		return unknownParameterMessage(parameters[0])
 	}
+}
+
+func getReportFrequency(api plugin.API) (time.Duration, error) {
+	b, err := api.KVGet(reportFrequencyKey)
+	if err != nil {
+		return 0, fmt.Errorf("api.KVGet: %w", err)
+	}
+
+	var minutes int
+
+	if err := json.Unmarshal(b, &minutes); err != nil {
+		return 0, fmt.Errorf("json.Unmarshal: %w", err)
+	}
+
+	if minutes <= 0 {
+		return defaultReportFrequency, nil
+	}
+
+	return time.Duration(minutes) * time.Minute, nil
+}
+
+func setReportFrequency(api plugin.API, client *nagios.Client, parameters []string) string {
+	if len(parameters) != 1 {
+		return "You must supply exactly one parameter (number of minutes)."
+	}
+
+	i, err := strconv.Atoi(parameters[0])
+	if err != nil {
+		api.LogError("Atoi", logErrorKey, err)
+		return settingReportFrequencyUnsuccessful
+	}
+
+	b, err := json.Marshal(i)
+	if err != nil {
+		api.LogError("Marshal", logErrorKey, err)
+		return settingReportFrequencyUnsuccessful
+	}
+
+	if err := api.KVSet(reportFrequencyKey, b); err != nil {
+		api.LogError("KVSet", logErrorKey, err)
+		return settingReportFrequencyUnsuccessful
+	}
+
+	return "Report frequency set successfully."
 }
