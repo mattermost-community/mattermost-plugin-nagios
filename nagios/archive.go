@@ -183,6 +183,7 @@ type AlertListEntry struct {
 	ObjectType   string `json:"object_type"`
 	HostName     string `json:"host_name"`
 	Description  string `json:"description"`
+	Name         string `json:"name"`
 	StateType    string `json:"state_type"`
 	State        string `json:"state"`
 	PluginOutput string `json:"plugin_output"`
