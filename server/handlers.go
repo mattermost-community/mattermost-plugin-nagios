@@ -31,7 +31,7 @@ const (
 
 	settingLogsStartTimeUnsuccessful = "Setting logs start time unsuccessful."
 	logsStartTimeKey                 = "logs-start-time"
-	defaultLogsFrom                  = 24 * time.Hour
+	defaultLogsStartTime             = 24 * time.Hour
 
 	gettingLogsUnsuccessful = "Getting logs unsuccessful"
 	resultTypeTextSuccess   = "Success"
@@ -98,7 +98,7 @@ func getLogsStartTime(api plugin.API) (time.Duration, error) {
 	}
 
 	if seconds <= 0 {
-		return defaultLogsFrom, nil
+		return defaultLogsStartTime, nil
 	}
 
 	return time.Duration(seconds) * time.Second, nil
@@ -137,11 +137,11 @@ func formatNagiosTimestamp(t int64) string {
 	return time.Unix(t/1e3, 0).String()
 }
 
-func extractHostName(e nagios.NotificationListEntry) string {
-	if len(e.HostName) == 0 {
-		return e.Name
+func formatHostName(name, alt string) string {
+	if len(name) == 0 {
+		return alt
 	}
-	return e.HostName
+	return name
 }
 
 func gettingLogsUnsuccessfulMessage(message string) string {
@@ -157,7 +157,7 @@ func formatAlertListEntry(e nagios.AlertListEntry) string {
 	return fmt.Sprintf("[%s] [%s] [%s] [%s] [%s] [%s] %s",
 		formatNagiosTimestamp(e.Timestamp),
 		e.ObjectType,
-		e.HostName,
+		formatHostName(e.HostName, e.Name),
 		e.Description,
 		e.StateType,
 		e.State,
@@ -190,7 +190,7 @@ func formatNotificationListEntry(e nagios.NotificationListEntry) string {
 	return fmt.Sprintf("[%s] [%s] [%s] [%s] [%s] [%s] [%s] %s",
 		formatNagiosTimestamp(e.Timestamp),
 		e.ObjectType,
-		extractHostName(e),
+		formatHostName(e.HostName, e.Name),
 		e.Description,
 		e.Contact,
 		e.NotificationType,

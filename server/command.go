@@ -33,9 +33,7 @@ var nagiosCommand = &model.Command{
 	Description:      "A Mattermost plugin to interact with Nagios",
 }
 
-func parseCommandArgs(args *model.CommandArgs) (
-	command, action string,
-	parameters []string) {
+func parseCommandArgs(args *model.CommandArgs) (command, action string, parameters []string) {
 	fields := strings.Fields(args.Command)
 
 	if len(fields) > 0 {
