@@ -31,14 +31,14 @@ const (
 
 	settingLogsStartTimeUnsuccessful = "Setting logs start time unsuccessful."
 	logsStartTimeKey                 = "logs-start-time"
-	defaultLogsStartTime             = 24 * time.Hour
+	defaultLogsStartTime             = 86400 // get logs from one day
 
 	gettingLogsUnsuccessful = "Getting logs unsuccessful"
 	resultTypeTextSuccess   = "Success"
 
 	settingReportFrequencyUnsuccessful = "Setting report frequency unsuccessful."
 	reportFrequencyKey                 = "report-frequency"
-	defaultReportFrequency             = 10 * time.Minute
+	// defaultReportFrequency             = 10 * time.Minute
 )
 
 func getLogsLimit(api plugin.API) (int, error) {
@@ -154,7 +154,7 @@ func unknownParameterMessage(parameter string) string {
 
 // TODO(amwolff, DanielSz50): rewrite formatAlertListEntry (mimic showlog.cgi).
 func formatAlertListEntry(e nagios.AlertListEntry) string {
-	return fmt.Sprintf("[%s] [%s] [%s] [%s] [%s] [%s] %s",
+	return fmt.Sprintf("[%s] %s: %s;%s;%s;%s;%s",
 		formatNagiosTimestamp(e.Timestamp),
 		e.ObjectType,
 		formatHostName(e.HostName, e.Name),
@@ -187,7 +187,7 @@ func formatAlerts(alerts nagios.AlertList) string {
 
 // TODO(amwolff, DanielSz50): rewrite formatNotificationListEntry (mimic showlog.cgi).
 func formatNotificationListEntry(e nagios.NotificationListEntry) string {
-	return fmt.Sprintf("[%s] [%s] [%s] [%s] [%s] [%s] [%s] %s",
+	return fmt.Sprintf("[%s] %s: %s;%s;%s;%s;%s;%s",
 		formatNagiosTimestamp(e.Timestamp),
 		e.ObjectType,
 		formatHostName(e.HostName, e.Name),
@@ -317,24 +317,24 @@ func getLogs(api plugin.API, client *nagios.Client, parameters []string) string 
 	}
 }
 
-func getReportFrequency(api plugin.API) (time.Duration, error) {
-	b, err := api.KVGet(reportFrequencyKey)
-	if err != nil {
-		return 0, fmt.Errorf("api.KVGet: %w", err)
-	}
-
-	var minutes int
-
-	if err := json.Unmarshal(b, &minutes); err != nil {
-		return 0, fmt.Errorf("json.Unmarshal: %w", err)
-	}
-
-	if minutes <= 0 {
-		return defaultReportFrequency, nil
-	}
-
-	return time.Duration(minutes) * time.Minute, nil
-}
+// func getReportFrequency(api plugin.API) (time.Duration, error) {
+//	b, err := api.KVGet(reportFrequencyKey)
+//	if err != nil {
+//		return 0, fmt.Errorf("api.KVGet: %w", err)
+//	}
+//
+//	var minutes int
+//
+//	if err := json.Unmarshal(b, &minutes); err != nil {
+//		return 0, fmt.Errorf("json.Unmarshal: %w", err)
+//	}
+//
+//	if minutes <= 0 {
+//		return defaultReportFrequency, nil
+//	}
+//
+//	return time.Duration(minutes) * time.Minute, nil
+//}
 
 func setReportFrequency(api plugin.API, client *nagios.Client, parameters []string) string {
 	if len(parameters) != 1 {

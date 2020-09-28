@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -33,6 +34,31 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 	fmt.Fprint(w, "Hello, world!")
 }
 
+func (p *Plugin) setDefaultKV(key string, value interface{}) error {
+	b, err := json.Marshal(value)
+	if err != nil {
+		return fmt.Errorf("json.Marshal: %w", err)
+	}
+
+	if err := p.API.KVSet(key, b); err != nil {
+		return fmt.Errorf("p.API.KVSet: %w", err)
+	}
+
+	return nil
+}
+
+func (p *Plugin) StoreDefaultKV() error {
+	if err := p.setDefaultKV(logsLimitKey, defaultLogsLimit); err != nil {
+		return err
+	}
+
+	if err := p.setDefaultKV(logsStartTimeKey, defaultLogsStartTime); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (p *Plugin) OnActivate() error {
 	config := p.getConfiguration()
 
@@ -63,7 +89,7 @@ func (p *Plugin) OnActivate() error {
 		return fmt.Errorf("p.API.GetBundlePath: %w", err)
 	}
 
-	profileImage, err := ioutil.ReadFile(filepath.Join(bundlePath, "assets", "nagios.png"))
+	profileImage, err := ioutil.ReadFile(filepath.Join(bundlePath, "assets", "Nagios-Logo.jpg"))
 	if err != nil {
 		return fmt.Errorf("ioutil.ReadFile: %w", err)
 	}
@@ -74,6 +100,10 @@ func (p *Plugin) OnActivate() error {
 
 	if err := p.API.RegisterCommand(nagiosCommand); err != nil {
 		return fmt.Errorf("p.API.RegisterCommand: %w", err)
+	}
+
+	if err := p.StoreDefaultKV(); err != nil {
+		return fmt.Errorf("p.StoreDefaultKV: %w", err)
 	}
 
 	return nil
