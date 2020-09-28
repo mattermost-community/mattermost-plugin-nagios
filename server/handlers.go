@@ -22,6 +22,25 @@ var commandHandlers = map[string]commandHandlerFunc{
 	"set-report-frequency": setReportFrequency,
 }
 
+// we should move stateString type to go-nagios repo
+type stateString string
+
+const (
+	stateOk       stateString = "ok"
+	stateWarning  stateString = "warning"
+	stateCritical stateString = "critical"
+	stateUnknown  stateString = "unknown"
+)
+
+type mattermostEmoji string
+
+const (
+	checkMarkEmoji    mattermostEmoji = ":white_check_mark:"
+	warningEmoji      mattermostEmoji = ":warning:"
+	doubleBangEmoji   mattermostEmoji = ":bangbang:"
+	questionMarkEmoji mattermostEmoji = ":question:"
+)
+
 const (
 	logErrorKey = "error"
 
@@ -38,7 +57,7 @@ const (
 
 	settingReportFrequencyUnsuccessful = "Setting report frequency unsuccessful."
 	reportFrequencyKey                 = "report-frequency"
-	// defaultReportFrequency             = 10 * time.Minute
+	defaultReportFrequency             = 10 * time.Minute
 )
 
 func getLogsLimit(api plugin.API) (int, error) {
@@ -152,9 +171,25 @@ func unknownParameterMessage(parameter string) string {
 	return fmt.Sprintf("Unknown parameter (%s).", parameter)
 }
 
+func getMattermostEmoji(state stateString) mattermostEmoji {
+	switch state {
+	case stateOk:
+		return checkMarkEmoji
+	case stateWarning:
+		return warningEmoji
+	case stateCritical:
+		return doubleBangEmoji
+	case stateUnknown:
+		return questionMarkEmoji
+	default:
+		return questionMarkEmoji
+	}
+}
+
 // TODO(amwolff, DanielSz50): rewrite formatAlertListEntry (mimic showlog.cgi).
 func formatAlertListEntry(e nagios.AlertListEntry) string {
-	return fmt.Sprintf("[%s] %s: %s;%s;%s;%s;%s",
+	return fmt.Sprintf("%s [%s] %s: %s;%s;%s;%s;%s",
+		getMattermostEmoji(stateString(e.State)),
 		formatNagiosTimestamp(e.Timestamp),
 		e.ObjectType,
 		formatHostName(e.HostName, e.Name),
@@ -317,24 +352,24 @@ func getLogs(api plugin.API, client *nagios.Client, parameters []string) string 
 	}
 }
 
-// func getReportFrequency(api plugin.API) (time.Duration, error) {
-//	b, err := api.KVGet(reportFrequencyKey)
-//	if err != nil {
-//		return 0, fmt.Errorf("api.KVGet: %w", err)
-//	}
-//
-//	var minutes int
-//
-//	if err := json.Unmarshal(b, &minutes); err != nil {
-//		return 0, fmt.Errorf("json.Unmarshal: %w", err)
-//	}
-//
-//	if minutes <= 0 {
-//		return defaultReportFrequency, nil
-//	}
-//
-//	return time.Duration(minutes) * time.Minute, nil
-//}
+func getReportFrequency(api plugin.API) (time.Duration, error) {
+	b, err := api.KVGet(reportFrequencyKey)
+	if err != nil {
+		return 0, fmt.Errorf("api.KVGet: %w", err)
+	}
+
+	var minutes int
+
+	if err := json.Unmarshal(b, &minutes); err != nil {
+		return 0, fmt.Errorf("json.Unmarshal: %w", err)
+	}
+
+	if minutes <= 0 {
+		return defaultReportFrequency, nil
+	}
+
+	return time.Duration(minutes) * time.Minute, nil
+}
 
 func setReportFrequency(api plugin.API, client *nagios.Client, parameters []string) string {
 	if len(parameters) != 1 {

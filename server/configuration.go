@@ -1,7 +1,11 @@
 package main
 
 import (
+	"fmt"
+	"net/http"
 	"reflect"
+
+	"github.com/ulumuri/go-nagios/nagios"
 
 	"github.com/pkg/errors"
 )
@@ -86,6 +90,19 @@ func (p *Plugin) OnConfigurationChange() error {
 	}
 
 	p.setConfiguration(configuration)
+
+	config := p.getConfiguration()
+
+	if err := config.isValid(); err != nil {
+		return err
+	}
+
+	c, err := nagios.NewClient(http.DefaultClient, config.NagiosURL)
+	if err != nil {
+		return fmt.Errorf("nagios.NewClient: %w", err)
+	}
+
+	p.client = c
 
 	return nil
 }

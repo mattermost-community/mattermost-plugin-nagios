@@ -60,19 +60,6 @@ func (p *Plugin) StoreDefaultKV() error {
 }
 
 func (p *Plugin) OnActivate() error {
-	config := p.getConfiguration()
-
-	if err := config.isValid(); err != nil {
-		return err
-	}
-
-	c, err := nagios.NewClient(http.DefaultClient, config.NagiosURL)
-	if err != nil {
-		return fmt.Errorf("nagios.NewClient: %w", err)
-	}
-
-	p.client = c
-
 	botUserID, err := p.Helpers.EnsureBot(&model.Bot{
 		Username:    "nagios",
 		DisplayName: "Nagios",
@@ -89,7 +76,7 @@ func (p *Plugin) OnActivate() error {
 		return fmt.Errorf("p.API.GetBundlePath: %w", err)
 	}
 
-	profileImage, err := ioutil.ReadFile(filepath.Join(bundlePath, "assets", "Nagios-Logo.jpg"))
+	profileImage, err := ioutil.ReadFile(filepath.Join(bundlePath, "assets", "nagios.png"))
 	if err != nil {
 		return fmt.Errorf("ioutil.ReadFile: %w", err)
 	}
