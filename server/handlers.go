@@ -13,6 +13,7 @@ import (
 
 type commandHandlerFunc func(api plugin.API, client *nagios.Client, parameters []string) string
 
+// TODO(danielsz50): implement get-current-limits command
 // TODO(amwolff): get rid of commandHandlers as a global.
 var commandHandlers = map[string]commandHandlerFunc{
 	"help":                 nil,
@@ -20,6 +21,12 @@ var commandHandlers = map[string]commandHandlerFunc{
 	"set-logs-start-time":  setLogsStartTime,
 	"get-logs":             getLogs,
 	"set-report-frequency": setReportFrequency,
+}
+
+var defaultKVStore = map[string]interface{}{
+	logsLimitKey:       defaultLogsLimit,
+	logsStartTimeKey:   defaultLogsStartTime,
+	reportFrequencyKey: defaultReportFrequency,
 }
 
 // we should move stateString type to go-nagios repo
@@ -39,15 +46,18 @@ const (
 	warningEmoji      mattermostEmoji = ":warning:"
 	doubleBangEmoji   mattermostEmoji = ":bangbang:"
 	questionMarkEmoji mattermostEmoji = ":question:"
+	bellEmoji         mattermostEmoji = ":bell:"
 )
 
 const (
 	logErrorKey = "error"
 
+	settingLogsLimitInvalid      = "Invalid argument - logs limit must be positive integer."
 	settingLogsLimitUnsuccessful = "Setting logs limit unsuccessful."
 	logsLimitKey                 = "logs-limit"
 	defaultLogsLimit             = 50
 
+	settingLogsStartTimeInvalid      = "Invalid argument - start time must be positive integer."
 	settingLogsStartTimeUnsuccessful = "Setting logs start time unsuccessful."
 	logsStartTimeKey                 = "logs-start-time"
 	defaultLogsStartTime             = 86400 // get logs from one day
@@ -55,6 +65,7 @@ const (
 	gettingLogsUnsuccessful = "Getting logs unsuccessful"
 	resultTypeTextSuccess   = "Success"
 
+	settingReportFrequencyInvalid      = "Invalid argument - report frequency must be positive integer."
 	settingReportFrequencyUnsuccessful = "Setting report frequency unsuccessful."
 	reportFrequencyKey                 = "report-frequency"
 	defaultReportFrequency             = 10 * time.Minute
@@ -90,6 +101,10 @@ func setLogsLimit(api plugin.API, client *nagios.Client, parameters []string) st
 		return settingLogsLimitUnsuccessful
 	}
 
+	if i <= 0 {
+		return settingLogsLimitInvalid
+	}
+
 	b, err := json.Marshal(i)
 	if err != nil {
 		api.LogError("Marshal", logErrorKey, err)
@@ -117,7 +132,7 @@ func getLogsStartTime(api plugin.API) (time.Duration, error) {
 	}
 
 	if seconds <= 0 {
-		return defaultLogsStartTime, nil
+		return time.Duration(defaultLogsStartTime) * time.Second, nil
 	}
 
 	return time.Duration(seconds) * time.Second, nil
@@ -132,6 +147,10 @@ func setLogsStartTime(api plugin.API, client *nagios.Client, parameters []string
 	if err != nil {
 		api.LogError("ParseInt", logErrorKey, err)
 		return settingLogsStartTimeUnsuccessful
+	}
+
+	if i <= 0 {
+		return settingLogsStartTimeInvalid
 	}
 
 	b, err := json.Marshal(i)
@@ -188,7 +207,7 @@ func getMattermostEmoji(state stateString) mattermostEmoji {
 
 // TODO(amwolff, DanielSz50): rewrite formatAlertListEntry (mimic showlog.cgi).
 func formatAlertListEntry(e nagios.AlertListEntry) string {
-	return fmt.Sprintf("%s [%s] %s: %s;%s;%s;%s;%s",
+	return fmt.Sprintf("%s [%s] %s: %s | %s | %s | %s | %s",
 		getMattermostEmoji(stateString(e.State)),
 		formatNagiosTimestamp(e.Timestamp),
 		e.ObjectType,
@@ -222,7 +241,8 @@ func formatAlerts(alerts nagios.AlertList) string {
 
 // TODO(amwolff, DanielSz50): rewrite formatNotificationListEntry (mimic showlog.cgi).
 func formatNotificationListEntry(e nagios.NotificationListEntry) string {
-	return fmt.Sprintf("[%s] %s: %s;%s;%s;%s;%s;%s",
+	return fmt.Sprintf("%s [%s] %s: %s | %s | %s | %s | %s | %s",
+		bellEmoji,
 		formatNagiosTimestamp(e.Timestamp),
 		e.ObjectType,
 		formatHostName(e.HostName, e.Name),
@@ -380,6 +400,10 @@ func setReportFrequency(api plugin.API, client *nagios.Client, parameters []stri
 	if err != nil {
 		api.LogError("Atoi", logErrorKey, err)
 		return settingReportFrequencyUnsuccessful
+	}
+
+	if i <= 0 {
+		return settingReportFrequencyInvalid
 	}
 
 	b, err := json.Marshal(i)

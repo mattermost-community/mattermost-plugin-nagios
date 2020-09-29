@@ -48,12 +48,10 @@ func (p *Plugin) setDefaultKV(key string, value interface{}) error {
 }
 
 func (p *Plugin) StoreDefaultKV() error {
-	if err := p.setDefaultKV(logsLimitKey, defaultLogsLimit); err != nil {
-		return err
-	}
-
-	if err := p.setDefaultKV(logsStartTimeKey, defaultLogsStartTime); err != nil {
-		return err
+	for key, val := range defaultKVStore {
+		if err := p.setDefaultKV(key, val); err != nil {
+			return err
+		}
 	}
 
 	return nil
