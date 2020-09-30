@@ -29,8 +29,42 @@ var nagiosCommand = &model.Command{
 	AutoComplete:     true,
 	AutoCompleteDesc: getAutoCompleteDesc(commandHandlers),
 	AutoCompleteHint: "[command]",
+	AutocompleteData: getAutocompleteData(),
 	DisplayName:      "Nagios",
 	Description:      "A Mattermost plugin to interact with Nagios",
+}
+
+func getLogsAutoCompleteData() *model.AutocompleteData {
+	getLogs := model.NewAutocompleteData("get-logs", "[alerts|notifications]", "Get logs of specific type")
+
+	alerts := model.NewAutocompleteData("alerts", "", "Get alert logs")
+	getLogs.AddCommand(alerts)
+
+	notifications := model.NewAutocompleteData("notifications", "", "Get notification logs")
+	getLogs.AddCommand(notifications)
+
+	return getLogs
+}
+
+func getAutocompleteData() *model.AutocompleteData {
+	nagios := model.NewAutocompleteData("nagios", "[command]", getAutoCompleteDesc(commandHandlers))
+
+	// Auto-complete for get-logs command.
+	nagios.AddCommand(getLogsAutoCompleteData())
+
+	// Auto-complete for set-logs-limit command.
+	setLogsLimit := model.NewAutocompleteData("set-logs-limit", "[positive integer]", "Set max number of logs to display")
+	nagios.AddCommand(setLogsLimit)
+
+	// Auto-complete for set-logs-start-time command.
+	setLogsStartTime := model.NewAutocompleteData("set-logs-start-time", "[seconds]", "Set number of seconds to get logs from")
+	nagios.AddCommand(setLogsStartTime)
+
+	// Auto-complete for set-report-frequency command.
+	setReportFrequency := model.NewAutocompleteData("set-report-frequency", "[minutes]", "Set frequency of system monitoring reports")
+	nagios.AddCommand(setReportFrequency)
+
+	return nagios
 }
 
 func parseCommandArgs(args *model.CommandArgs) (command, action string, parameters []string) {

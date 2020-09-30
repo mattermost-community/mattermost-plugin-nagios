@@ -33,7 +33,7 @@ const manifestStr = `
         "key": "NagiosURL",
         "display_name": "Nagios URL",
         "type": "text",
-        "help_text": "The URL for your Nagios instance. Must start with http:// or https://. For example: https://nagios.example.com.",
+        "help_text": "The URL for your Nagios instance. Must start with http:// or https://.",
         "placeholder": "",
         "default": null
       }

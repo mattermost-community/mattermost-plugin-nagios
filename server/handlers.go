@@ -13,6 +13,7 @@ import (
 
 type commandHandlerFunc func(api plugin.API, client *nagios.Client, parameters []string) string
 
+// TODO(DanielSz50): implement get-current-limits command
 // TODO(amwolff): get rid of commandHandlers as a global.
 var commandHandlers = map[string]commandHandlerFunc{
 	"help":                 nil,
@@ -23,19 +24,37 @@ var commandHandlers = map[string]commandHandlerFunc{
 }
 
 const (
+	stateOk       string = "ok"
+	stateWarning  string = "warning"
+	stateCritical string = "critical"
+	stateUnknown  string = "unknown"
+)
+
+const (
+	checkMarkEmoji    string = ":white_check_mark:"
+	warningEmoji      string = ":warning:"
+	doubleBangEmoji   string = ":bangbang:"
+	questionMarkEmoji string = ":question:"
+	bellEmoji         string = ":bell:"
+)
+
+const (
 	logErrorKey = "error"
 
+	settingLogsLimitInvalid      = "Invalid argument - logs limit must be a positive integer."
 	settingLogsLimitUnsuccessful = "Setting logs limit unsuccessful."
 	logsLimitKey                 = "logs-limit"
 	defaultLogsLimit             = 50
 
+	settingLogsStartTimeInvalid      = "Invalid argument - start time must be a positive integer."
 	settingLogsStartTimeUnsuccessful = "Setting logs start time unsuccessful."
 	logsStartTimeKey                 = "logs-start-time"
-	defaultLogsStartTime             = 24 * time.Hour
+	defaultLogsStartTime             = 86400 // get logs from one day
 
 	gettingLogsUnsuccessful = "Getting logs unsuccessful"
 	resultTypeTextSuccess   = "Success"
 
+	settingReportFrequencyInvalid      = "Invalid argument - report frequency must be a positive integer."
 	settingReportFrequencyUnsuccessful = "Setting report frequency unsuccessful."
 	reportFrequencyKey                 = "report-frequency"
 	defaultReportFrequency             = 10 * time.Minute
@@ -71,6 +90,10 @@ func setLogsLimit(api plugin.API, client *nagios.Client, parameters []string) st
 		return settingLogsLimitUnsuccessful
 	}
 
+	if i <= 0 {
+		return settingLogsLimitInvalid
+	}
+
 	b, err := json.Marshal(i)
 	if err != nil {
 		api.LogError("Marshal", logErrorKey, err)
@@ -98,7 +121,7 @@ func getLogsStartTime(api plugin.API) (time.Duration, error) {
 	}
 
 	if seconds <= 0 {
-		return defaultLogsStartTime, nil
+		return time.Duration(defaultLogsStartTime) * time.Second, nil
 	}
 
 	return time.Duration(seconds) * time.Second, nil
@@ -113,6 +136,10 @@ func setLogsStartTime(api plugin.API, client *nagios.Client, parameters []string
 	if err != nil {
 		api.LogError("ParseInt", logErrorKey, err)
 		return settingLogsStartTimeUnsuccessful
+	}
+
+	if i <= 0 {
+		return settingLogsStartTimeInvalid
 	}
 
 	b, err := json.Marshal(i)
@@ -152,9 +179,24 @@ func unknownParameterMessage(parameter string) string {
 	return fmt.Sprintf("Unknown parameter (%s).", parameter)
 }
 
-// TODO(amwolff, DanielSz50): rewrite formatAlertListEntry (mimic showlog.cgi).
+func getMattermostEmoji(state string) string {
+	switch state {
+	case stateOk:
+		return checkMarkEmoji
+	case stateWarning:
+		return warningEmoji
+	case stateCritical:
+		return doubleBangEmoji
+	case stateUnknown:
+		return questionMarkEmoji
+	default:
+		return questionMarkEmoji
+	}
+}
+
 func formatAlertListEntry(e nagios.AlertListEntry) string {
-	return fmt.Sprintf("[%s] [%s] [%s] [%s] [%s] [%s] %s",
+	return fmt.Sprintf("%s [%s] %s: %s | %s | %s | %s | %s",
+		getMattermostEmoji(e.State),
 		formatNagiosTimestamp(e.Timestamp),
 		e.ObjectType,
 		formatHostName(e.HostName, e.Name),
@@ -185,9 +227,9 @@ func formatAlerts(alerts nagios.AlertList) string {
 	return b.String()
 }
 
-// TODO(amwolff, DanielSz50): rewrite formatNotificationListEntry (mimic showlog.cgi).
 func formatNotificationListEntry(e nagios.NotificationListEntry) string {
-	return fmt.Sprintf("[%s] [%s] [%s] [%s] [%s] [%s] [%s] %s",
+	return fmt.Sprintf("%s [%s] %s: %s | %s | %s | %s | %s | %s",
+		bellEmoji,
 		formatNagiosTimestamp(e.Timestamp),
 		e.ObjectType,
 		formatHostName(e.HostName, e.Name),
@@ -345,6 +387,10 @@ func setReportFrequency(api plugin.API, client *nagios.Client, parameters []stri
 	if err != nil {
 		api.LogError("Atoi", logErrorKey, err)
 		return settingReportFrequencyUnsuccessful
+	}
+
+	if i <= 0 {
+		return settingReportFrequencyInvalid
 	}
 
 	b, err := json.Marshal(i)

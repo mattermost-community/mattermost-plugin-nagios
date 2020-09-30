@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -33,20 +34,36 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 	fmt.Fprint(w, "Hello, world!")
 }
 
-func (p *Plugin) OnActivate() error {
-	config := p.getConfiguration()
-
-	if err := config.isValid(); err != nil {
-		return err
-	}
-
-	c, err := nagios.NewClient(http.DefaultClient, config.NagiosURL)
+func (p *Plugin) setDefaultKV(key string, value interface{}) error {
+	b, err := json.Marshal(value)
 	if err != nil {
-		return fmt.Errorf("nagios.NewClient: %w", err)
+		return fmt.Errorf("json.Marshal: %w", err)
 	}
 
-	p.client = c
+	if err := p.API.KVSet(key, b); err != nil {
+		return fmt.Errorf("p.API.KVSet: %w", err)
+	}
 
+	return nil
+}
+
+var defaultKVStore = map[string]interface{}{
+	logsLimitKey:       defaultLogsLimit,
+	logsStartTimeKey:   defaultLogsStartTime,
+	reportFrequencyKey: defaultReportFrequency,
+}
+
+func (p *Plugin) storeDefaultKV() error {
+	for key, val := range defaultKVStore {
+		if err := p.setDefaultKV(key, val); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (p *Plugin) OnActivate() error {
 	botUserID, err := p.Helpers.EnsureBot(&model.Bot{
 		Username:    "nagios",
 		DisplayName: "Nagios",
@@ -74,6 +91,10 @@ func (p *Plugin) OnActivate() error {
 
 	if err := p.API.RegisterCommand(nagiosCommand); err != nil {
 		return fmt.Errorf("p.API.RegisterCommand: %w", err)
+	}
+
+	if err := p.storeDefaultKV(); err != nil {
+		return fmt.Errorf("p.storeDefaultKV: %w", err)
 	}
 
 	return nil

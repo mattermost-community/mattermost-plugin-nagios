@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"net/http"
 	"reflect"
 
 	"github.com/pkg/errors"
+	"github.com/ulumuri/go-nagios/nagios"
 )
 
 // configuration captures the plugin's external configuration as exposed in the Mattermost server
@@ -23,7 +26,7 @@ type configuration struct {
 
 func (c *configuration) isValid() error {
 	if len(c.NagiosURL) == 0 {
-		return errors.New("the Nagios URL must best set")
+		return errors.New("the Nagios URL must be set")
 	}
 	return nil
 }
@@ -86,6 +89,19 @@ func (p *Plugin) OnConfigurationChange() error {
 	}
 
 	p.setConfiguration(configuration)
+
+	config := p.getConfiguration()
+
+	if err := config.isValid(); err != nil {
+		return err
+	}
+
+	c, err := nagios.NewClient(http.DefaultClient, config.NagiosURL)
+	if err != nil {
+		return fmt.Errorf("nagios.NewClient: %w", err)
+	}
+
+	p.client = c
 
 	return nil
 }
