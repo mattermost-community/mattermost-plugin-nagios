@@ -47,7 +47,13 @@ func (p *Plugin) setDefaultKV(key string, value interface{}) error {
 	return nil
 }
 
-func (p *Plugin) StoreDefaultKV() error {
+var defaultKVStore = map[string]interface{}{
+	logsLimitKey:       defaultLogsLimit,
+	logsStartTimeKey:   defaultLogsStartTime,
+	reportFrequencyKey: defaultReportFrequency,
+}
+
+func (p *Plugin) storeDefaultKV() error {
 	for key, val := range defaultKVStore {
 		if err := p.setDefaultKV(key, val); err != nil {
 			return err
@@ -87,8 +93,8 @@ func (p *Plugin) OnActivate() error {
 		return fmt.Errorf("p.API.RegisterCommand: %w", err)
 	}
 
-	if err := p.StoreDefaultKV(); err != nil {
-		return fmt.Errorf("p.StoreDefaultKV: %w", err)
+	if err := p.storeDefaultKV(); err != nil {
+		return fmt.Errorf("p.storeDefaultKV: %w", err)
 	}
 
 	return nil

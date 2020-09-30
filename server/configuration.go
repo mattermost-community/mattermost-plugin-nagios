@@ -5,9 +5,8 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/ulumuri/go-nagios/nagios"
-
 	"github.com/pkg/errors"
+	"github.com/ulumuri/go-nagios/nagios"
 )
 
 // configuration captures the plugin's external configuration as exposed in the Mattermost server

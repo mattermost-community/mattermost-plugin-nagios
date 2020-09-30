@@ -34,31 +34,35 @@ var nagiosCommand = &model.Command{
 	Description:      "A Mattermost plugin to interact with Nagios",
 }
 
+func getLogsAutoCompleteData() *model.AutocompleteData {
+	getLogs := model.NewAutocompleteData("get-logs", "[alerts|notifications]", "Get logs of specific type")
+
+	alerts := model.NewAutocompleteData("alerts", "", "Get alert logs")
+	getLogs.AddCommand(alerts)
+
+	notifications := model.NewAutocompleteData("notifications", "", "Get notification logs")
+	getLogs.AddCommand(notifications)
+
+	return getLogs
+}
+
 func getAutocompleteData() *model.AutocompleteData {
 	nagios := model.NewAutocompleteData("nagios", "[command]", getAutoCompleteDesc(commandHandlers))
 
-	// GET LOGS
-	getlogs := model.NewAutocompleteData("get-logs", "[alerts|notifications]", "Get logs of specific type")
+	// Auto-complete for get-logs command.
+	nagios.AddCommand(getLogsAutoCompleteData())
 
-	alerts := model.NewAutocompleteData("alerts", "", "Get alert logs")
-	getlogs.AddCommand(alerts)
+	// Auto-complete for set-logs-limit command.
+	setLogsLimit := model.NewAutocompleteData("set-logs-limit", "[positive integer]", "Set max number of logs to display")
+	nagios.AddCommand(setLogsLimit)
 
-	notifications := model.NewAutocompleteData("notifications", "", "Get notification logs")
-	getlogs.AddCommand(notifications)
+	// Auto-complete for set-logs-start-time command.
+	setLogsStartTime := model.NewAutocompleteData("set-logs-start-time", "[seconds]", "Set number of seconds to get logs from")
+	nagios.AddCommand(setLogsStartTime)
 
-	nagios.AddCommand(getlogs)
-
-	// SET LOGS LIMIT
-	setlogslimit := model.NewAutocompleteData("set-logs-limit", "[positive integer]", "Set max number of logs to display")
-	nagios.AddCommand(setlogslimit)
-
-	// SET LOGS START TIME
-	setlogsstarttime := model.NewAutocompleteData("set-logs-start-time", "[seconds]", "Set duration of time(seconds) to display logs from")
-	nagios.AddCommand(setlogsstarttime)
-
-	// SET REPORT FREQUENCY
-	setreportfrequency := model.NewAutocompleteData("set-report-frequency", "[minutes]", "Set frequency of system monitoring reports")
-	nagios.AddCommand(setreportfrequency)
+	// Auto-complete for set-report-frequency command.
+	setReportFrequency := model.NewAutocompleteData("set-report-frequency", "[minutes]", "Set frequency of system monitoring reports")
+	nagios.AddCommand(setReportFrequency)
 
 	return nagios
 }

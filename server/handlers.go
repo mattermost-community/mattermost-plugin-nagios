@@ -13,7 +13,7 @@ import (
 
 type commandHandlerFunc func(api plugin.API, client *nagios.Client, parameters []string) string
 
-// TODO(danielsz50): implement get-current-limits command
+// TODO(DanielSz50): implement get-current-limits command
 // TODO(amwolff): get rid of commandHandlers as a global.
 var commandHandlers = map[string]commandHandlerFunc{
 	"help":                 nil,
@@ -23,41 +23,30 @@ var commandHandlers = map[string]commandHandlerFunc{
 	"set-report-frequency": setReportFrequency,
 }
 
-var defaultKVStore = map[string]interface{}{
-	logsLimitKey:       defaultLogsLimit,
-	logsStartTimeKey:   defaultLogsStartTime,
-	reportFrequencyKey: defaultReportFrequency,
-}
-
-// we should move stateString type to go-nagios repo
-type stateString string
-
 const (
-	stateOk       stateString = "ok"
-	stateWarning  stateString = "warning"
-	stateCritical stateString = "critical"
-	stateUnknown  stateString = "unknown"
+	stateOk       string = "ok"
+	stateWarning  string = "warning"
+	stateCritical string = "critical"
+	stateUnknown  string = "unknown"
 )
 
-type mattermostEmoji string
-
 const (
-	checkMarkEmoji    mattermostEmoji = ":white_check_mark:"
-	warningEmoji      mattermostEmoji = ":warning:"
-	doubleBangEmoji   mattermostEmoji = ":bangbang:"
-	questionMarkEmoji mattermostEmoji = ":question:"
-	bellEmoji         mattermostEmoji = ":bell:"
+	checkMarkEmoji    string = ":white_check_mark:"
+	warningEmoji      string = ":warning:"
+	doubleBangEmoji   string = ":bangbang:"
+	questionMarkEmoji string = ":question:"
+	bellEmoji         string = ":bell:"
 )
 
 const (
 	logErrorKey = "error"
 
-	settingLogsLimitInvalid      = "Invalid argument - logs limit must be positive integer."
+	settingLogsLimitInvalid      = "Invalid argument - logs limit must be a positive integer."
 	settingLogsLimitUnsuccessful = "Setting logs limit unsuccessful."
 	logsLimitKey                 = "logs-limit"
 	defaultLogsLimit             = 50
 
-	settingLogsStartTimeInvalid      = "Invalid argument - start time must be positive integer."
+	settingLogsStartTimeInvalid      = "Invalid argument - start time must be a positive integer."
 	settingLogsStartTimeUnsuccessful = "Setting logs start time unsuccessful."
 	logsStartTimeKey                 = "logs-start-time"
 	defaultLogsStartTime             = 86400 // get logs from one day
@@ -65,7 +54,7 @@ const (
 	gettingLogsUnsuccessful = "Getting logs unsuccessful"
 	resultTypeTextSuccess   = "Success"
 
-	settingReportFrequencyInvalid      = "Invalid argument - report frequency must be positive integer."
+	settingReportFrequencyInvalid      = "Invalid argument - report frequency must be a positive integer."
 	settingReportFrequencyUnsuccessful = "Setting report frequency unsuccessful."
 	reportFrequencyKey                 = "report-frequency"
 	defaultReportFrequency             = 10 * time.Minute
@@ -190,7 +179,7 @@ func unknownParameterMessage(parameter string) string {
 	return fmt.Sprintf("Unknown parameter (%s).", parameter)
 }
 
-func getMattermostEmoji(state stateString) mattermostEmoji {
+func getMattermostEmoji(state string) string {
 	switch state {
 	case stateOk:
 		return checkMarkEmoji
@@ -205,10 +194,9 @@ func getMattermostEmoji(state stateString) mattermostEmoji {
 	}
 }
 
-// TODO(amwolff, DanielSz50): rewrite formatAlertListEntry (mimic showlog.cgi).
 func formatAlertListEntry(e nagios.AlertListEntry) string {
 	return fmt.Sprintf("%s [%s] %s: %s | %s | %s | %s | %s",
-		getMattermostEmoji(stateString(e.State)),
+		getMattermostEmoji(e.State),
 		formatNagiosTimestamp(e.Timestamp),
 		e.ObjectType,
 		formatHostName(e.HostName, e.Name),
@@ -239,7 +227,6 @@ func formatAlerts(alerts nagios.AlertList) string {
 	return b.String()
 }
 
-// TODO(amwolff, DanielSz50): rewrite formatNotificationListEntry (mimic showlog.cgi).
 func formatNotificationListEntry(e nagios.NotificationListEntry) string {
 	return fmt.Sprintf("%s [%s] %s: %s | %s | %s | %s | %s | %s",
 		bellEmoji,
