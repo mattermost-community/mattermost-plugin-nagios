@@ -14,29 +14,6 @@ import (
 type commandHandlerFunc func(api plugin.API, client *nagios.Client, parameters []string) string
 
 // TODO(DanielSz50): implement get-current-limits command
-// TODO(amwolff): get rid of commandHandlers as a global.
-var commandHandlers = map[string]commandHandlerFunc{
-	"help":                 nil,
-	"set-logs-limit":       setLogsLimit,
-	"set-logs-start-time":  setLogsStartTime,
-	"get-logs":             getLogs,
-	"set-report-frequency": setReportFrequency,
-}
-
-const (
-	stateOk       string = "ok"
-	stateWarning  string = "warning"
-	stateCritical string = "critical"
-	stateUnknown  string = "unknown"
-)
-
-const (
-	checkMarkEmoji    string = ":white_check_mark:"
-	warningEmoji      string = ":warning:"
-	doubleBangEmoji   string = ":bangbang:"
-	questionMarkEmoji string = ":question:"
-	bellEmoji         string = ":bell:"
-)
 
 const (
 	logErrorKey = "error"
@@ -178,6 +155,21 @@ func gettingLogsUnsuccessfulMessage(message string) string {
 func unknownParameterMessage(parameter string) string {
 	return fmt.Sprintf("Unknown parameter (%s).", parameter)
 }
+
+const (
+	stateOk       string = "ok"
+	stateWarning  string = "warning"
+	stateCritical string = "critical"
+	stateUnknown  string = "unknown"
+)
+
+const (
+	checkMarkEmoji    string = ":white_check_mark:"
+	warningEmoji      string = ":warning:"
+	doubleBangEmoji   string = ":bangbang:"
+	questionMarkEmoji string = ":question:"
+	bellEmoji         string = ":bell:"
+)
 
 func getMattermostEmoji(state string) string {
 	switch state {

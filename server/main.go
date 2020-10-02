@@ -5,5 +5,13 @@ import (
 )
 
 func main() {
-	plugin.ClientMain(&Plugin{})
+	plugin.ClientMain(&Plugin{
+		commandHandlers: map[string]commandHandlerFunc{
+			"help":                 nil,
+			"set-logs-limit":       setLogsLimit,
+			"set-logs-start-time":  setLogsStartTime,
+			"get-logs":             getLogs,
+			"set-report-frequency": setReportFrequency,
+		},
+	})
 }

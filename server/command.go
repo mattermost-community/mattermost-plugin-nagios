@@ -24,36 +24,26 @@ func getAutoCompleteDesc(m map[string]commandHandlerFunc) string {
 	return b.String()
 }
 
-var nagiosCommand = &model.Command{
-	Trigger:          "nagios",
-	AutoComplete:     true,
-	AutoCompleteDesc: getAutoCompleteDesc(commandHandlers),
-	AutoCompleteHint: "[command]",
-	AutocompleteData: getAutocompleteData(),
-	DisplayName:      "Nagios",
-	Description:      "A Mattermost plugin to interact with Nagios",
-}
-
-func getLogsAutoCompleteData() *model.AutocompleteData {
+func getLogsAutocompleteData() *model.AutocompleteData {
 	getLogs := model.NewAutocompleteData("get-logs", "[alerts|notifications]", "Get logs of specific type")
 
-	alerts := model.NewAutocompleteData("alerts", "", "Get alert logs")
+	alerts := model.NewAutocompleteData("alerts", "", "Get alerts")
 	getLogs.AddCommand(alerts)
 
-	notifications := model.NewAutocompleteData("notifications", "", "Get notification logs")
+	notifications := model.NewAutocompleteData("notifications", "", "Get notifications")
 	getLogs.AddCommand(notifications)
 
 	return getLogs
 }
 
-func getAutocompleteData() *model.AutocompleteData {
-	nagios := model.NewAutocompleteData("nagios", "[command]", getAutoCompleteDesc(commandHandlers))
+func getAutocompleteData(desc string) *model.AutocompleteData {
+	nagios := model.NewAutocompleteData("nagios", "[command]", desc)
 
 	// Auto-complete for get-logs command.
-	nagios.AddCommand(getLogsAutoCompleteData())
+	nagios.AddCommand(getLogsAutocompleteData())
 
 	// Auto-complete for set-logs-limit command.
-	setLogsLimit := model.NewAutocompleteData("set-logs-limit", "[positive integer]", "Set max number of logs to display")
+	setLogsLimit := model.NewAutocompleteData("set-logs-limit", "[positive integer]", "Set maximum number of logs to display")
 	nagios.AddCommand(setLogsLimit)
 
 	// Auto-complete for set-logs-start-time command.
@@ -65,6 +55,21 @@ func getAutocompleteData() *model.AutocompleteData {
 	nagios.AddCommand(setReportFrequency)
 
 	return nagios
+}
+
+func (p *Plugin) getCommand() *model.Command {
+	desc := getAutoCompleteDesc(p.commandHandlers)
+
+	return &model.Command{
+		Trigger:          "nagios",
+		AutoComplete:     true,
+		AutoCompleteDesc: desc,
+		AutoCompleteHint: "[command]",
+		DisplayName:      "Nagios",
+		Description:      "A Mattermost plugin to interact with Nagios",
+		AutocompleteData: getAutocompleteData(desc),
+		// AutocompleteIconData: nil,
+	}
 }
 
 func parseCommandArgs(args *model.CommandArgs) (command, action string, parameters []string) {
@@ -100,7 +105,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 
 	var msg string
 
-	if f, ok := commandHandlers[action]; ok {
+	if f, ok := p.commandHandlers[action]; ok {
 		msg = f(p.API, p.client, parameters)
 	} else {
 		msg = fmt.Sprintf("Unknown action (%s).", action)
