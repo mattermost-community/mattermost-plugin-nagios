@@ -15,8 +15,8 @@ const (
 	maximumReportListLength   = 50
 )
 
-func gettingReportUnsuccessfulMessage(part, message string) string {
-	return fmt.Sprintf("%s (%s): %s", gettingReportUnsuccessful, part, message)
+func gettingReportUnsuccessfulMessage(reportPart, message string) string {
+	return fmt.Sprintf("%s (%s): %s", gettingReportUnsuccessful, reportPart, message)
 }
 
 func reportPreamble() string {
@@ -51,7 +51,7 @@ func formatHostList(list nagios.HostList) string {
 	var abnormalOnly bool
 	if len(list.Data.HostList) > maximumReportListLength {
 		abnormalOnly = true
-		b.WriteString("**Too many hosts. Showing only abnormal state hosts.**\n")
+		b.WriteString("**Too many hosts. Showing only abnormal state hosts.**\n\n")
 	}
 
 	var linesWritten int
