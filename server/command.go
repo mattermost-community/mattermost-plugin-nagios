@@ -54,6 +54,14 @@ func getAutocompleteData(desc string) *model.AutocompleteData {
 	setReportFrequency := model.NewAutocompleteData("set-report-frequency", "[minutes]", "Set frequency of system monitoring reports")
 	nagios.AddCommand(setReportFrequency)
 
+	// Auto-complete for subscribe command.
+	subscribe := model.NewAutocompleteData("subscribe", "", "Subscribe to system monitoring reports")
+	nagios.AddCommand(subscribe)
+
+	// Auto-complete for unsubscribe command.
+	unsubscribe := model.NewAutocompleteData("unsubscribe", "", "Unsubscribe from system monitoring reports")
+	nagios.AddCommand(unsubscribe)
+
 	return nagios
 }
 
@@ -106,7 +114,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	var msg string
 
 	if f, ok := p.commandHandlers[action]; ok {
-		msg = f(p.API, p.client, parameters)
+		msg = f(p, args.ChannelId, parameters)
 	} else {
 		msg = fmt.Sprintf("Unknown action (%s).", action)
 	}

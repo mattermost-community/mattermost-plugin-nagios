@@ -29,6 +29,8 @@ type Plugin struct {
 	botUserID string
 
 	commandHandlers map[string]commandHandlerFunc
+
+	subscriptionStop chan<- bool
 }
 
 // ServeHTTP demonstrates a plugin that handles HTTP requests by greeting the world.

@@ -12,6 +12,8 @@ func main() {
 			"set-logs-start-time":  setLogsStartTime,
 			"get-logs":             getLogs,
 			"set-report-frequency": setReportFrequency,
+			"subscribe":            subscribe,
+			"unsubscribe":          unsubscribe,
 		},
 	})
 }

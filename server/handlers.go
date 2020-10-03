@@ -11,7 +11,7 @@ import (
 	"github.com/ulumuri/go-nagios/nagios"
 )
 
-type commandHandlerFunc func(api plugin.API, client *nagios.Client, parameters []string) string
+type commandHandlerFunc func(p *Plugin, channelID string, parameters []string) string
 
 // TODO(DanielSz50): implement get-current-limits command
 
@@ -49,21 +49,17 @@ func getLogsLimit(api plugin.API) (int, error) {
 		return 0, fmt.Errorf("json.Unmarshal: %w", err)
 	}
 
-	if limit <= 0 {
-		return defaultLogsLimit, nil
-	}
-
 	return limit, nil
 }
 
-func setLogsLimit(api plugin.API, client *nagios.Client, parameters []string) string {
+func (p *Plugin) setLogsLimit(parameters []string) string {
 	if len(parameters) != 1 {
 		return "You must supply exactly one parameter (integer value)."
 	}
 
 	i, err := strconv.Atoi(parameters[0])
 	if err != nil {
-		api.LogError("Atoi", logErrorKey, err)
+		p.API.LogError("Atoi", logErrorKey, err)
 		return settingLogsLimitUnsuccessful
 	}
 
@@ -73,16 +69,20 @@ func setLogsLimit(api plugin.API, client *nagios.Client, parameters []string) st
 
 	b, err := json.Marshal(i)
 	if err != nil {
-		api.LogError("Marshal", logErrorKey, err)
+		p.API.LogError("Marshal", logErrorKey, err)
 		return settingLogsLimitUnsuccessful
 	}
 
-	if err := api.KVSet(logsLimitKey, b); err != nil {
-		api.LogError("KVSet", logErrorKey, err)
+	if err := p.API.KVSet(logsLimitKey, b); err != nil {
+		p.API.LogError("KVSet", logErrorKey, err)
 		return settingLogsLimitUnsuccessful
 	}
 
 	return "Limit set successfully."
+}
+
+func setLogsLimit(p *Plugin, channelID string, parameters []string) string {
+	return p.setLogsLimit(parameters)
 }
 
 func getLogsStartTime(api plugin.API) (time.Duration, error) {
@@ -97,21 +97,17 @@ func getLogsStartTime(api plugin.API) (time.Duration, error) {
 		return 0, fmt.Errorf("json.Unmarshal: %w", err)
 	}
 
-	if seconds <= 0 {
-		return time.Duration(defaultLogsStartTime) * time.Second, nil
-	}
-
 	return time.Duration(seconds) * time.Second, nil
 }
 
-func setLogsStartTime(api plugin.API, client *nagios.Client, parameters []string) string {
+func (p *Plugin) setLogsStartTime(parameters []string) string {
 	if len(parameters) != 1 {
 		return "You must supply exactly one parameter (number of seconds)."
 	}
 
 	i, err := strconv.ParseInt(parameters[0], 10, 64)
 	if err != nil {
-		api.LogError("ParseInt", logErrorKey, err)
+		p.API.LogError("ParseInt", logErrorKey, err)
 		return settingLogsStartTimeUnsuccessful
 	}
 
@@ -121,16 +117,20 @@ func setLogsStartTime(api plugin.API, client *nagios.Client, parameters []string
 
 	b, err := json.Marshal(i)
 	if err != nil {
-		api.LogError("Marshal", logErrorKey, err)
+		p.API.LogError("Marshal", logErrorKey, err)
 		return settingLogsStartTimeUnsuccessful
 	}
 
-	if err := api.KVSet(logsStartTimeKey, b); err != nil {
-		api.LogError("KVSet", logErrorKey, err)
+	if err := p.API.KVSet(logsStartTimeKey, b); err != nil {
+		p.API.LogError("KVSet", logErrorKey, err)
 		return settingLogsStartTimeUnsuccessful
 	}
 
 	return "Start time set successfully."
+}
+
+func setLogsStartTime(p *Plugin, channelID string, parameters []string) string {
+	return p.setLogsStartTime(parameters)
 }
 
 // formatNagiosTimestamp formats the timestamp from Nagios Core JSON CGIs
@@ -156,39 +156,9 @@ func unknownParameterMessage(parameter string) string {
 	return fmt.Sprintf("Unknown parameter (%s).", parameter)
 }
 
-const (
-	stateOk       string = "ok"
-	stateWarning  string = "warning"
-	stateCritical string = "critical"
-	stateUnknown  string = "unknown"
-)
-
-const (
-	checkMarkEmoji    string = ":white_check_mark:"
-	warningEmoji      string = ":warning:"
-	doubleBangEmoji   string = ":bangbang:"
-	questionMarkEmoji string = ":question:"
-	bellEmoji         string = ":bell:"
-)
-
-func getMattermostEmoji(state string) string {
-	switch state {
-	case stateOk:
-		return checkMarkEmoji
-	case stateWarning:
-		return warningEmoji
-	case stateCritical:
-		return doubleBangEmoji
-	case stateUnknown:
-		return questionMarkEmoji
-	default:
-		return questionMarkEmoji
-	}
-}
-
 func formatAlertListEntry(e nagios.AlertListEntry) string {
 	return fmt.Sprintf("%s [%s] %s: %s | %s | %s | %s | %s",
-		getMattermostEmoji(e.State),
+		emoji(e.State),
 		formatNagiosTimestamp(e.Timestamp),
 		e.ObjectType,
 		formatHostName(e.HostName, e.Name),
@@ -220,8 +190,7 @@ func formatAlerts(alerts nagios.AlertList) string {
 }
 
 func formatNotificationListEntry(e nagios.NotificationListEntry) string {
-	return fmt.Sprintf("%s [%s] %s: %s | %s | %s | %s | %s | %s",
-		bellEmoji,
+	return fmt.Sprintf("[%s] %s: %s | %s | %s | %s | %s | %s",
 		formatNagiosTimestamp(e.Timestamp),
 		e.ObjectType,
 		formatHostName(e.HostName, e.Name),
@@ -282,14 +251,14 @@ func getLogsSpecific(parameters []string) (hostName, serviceDescription, message
 	}
 }
 
-func getLogs(api plugin.API, client *nagios.Client, parameters []string) string {
+func (p *Plugin) getLogs(parameters []string) string {
 	if len(parameters) == 0 {
 		return "You must supply at least one parameter (alerts|notifications)."
 	}
 
-	c, err := getLogsLimit(api)
+	c, err := getLogsLimit(p.API)
 	if err != nil {
-		api.LogError("getLogsLimit", logErrorKey, err)
+		p.API.LogError("getLogsLimit", logErrorKey, err)
 		return gettingLogsUnsuccessful
 	}
 
@@ -298,9 +267,9 @@ func getLogs(api plugin.API, client *nagios.Client, parameters []string) string 
 		return message
 	}
 
-	d, err := getLogsStartTime(api)
+	d, err := getLogsStartTime(p.API)
 	if err != nil {
-		api.LogError("getLogsStartTime", logErrorKey, err)
+		p.API.LogError("getLogsStartTime", logErrorKey, err)
 		return gettingLogsUnsuccessful
 	}
 
@@ -322,8 +291,8 @@ func getLogs(api plugin.API, client *nagios.Client, parameters []string) string 
 			},
 		}
 		var alerts nagios.AlertList
-		if err := client.Query(q, &alerts); err != nil {
-			api.LogError("Query", logErrorKey, err)
+		if err := p.client.Query(q, &alerts); err != nil {
+			p.API.LogError("Query", logErrorKey, err)
 			return gettingLogsUnsuccessful
 		}
 		return formatAlerts(alerts)
@@ -341,14 +310,18 @@ func getLogs(api plugin.API, client *nagios.Client, parameters []string) string 
 			},
 		}
 		var notifications nagios.NotificationList
-		if err := client.Query(q, &notifications); err != nil {
-			api.LogError("Query", logErrorKey, err)
+		if err := p.client.Query(q, &notifications); err != nil {
+			p.API.LogError("Query", logErrorKey, err)
 			return gettingLogsUnsuccessful
 		}
 		return formatNotifications(notifications)
 	default:
 		return unknownParameterMessage(parameters[0])
 	}
+}
+
+func getLogs(p *Plugin, channelID string, parameters []string) string {
+	return p.getLogs(parameters)
 }
 
 func getReportFrequency(api plugin.API) (time.Duration, error) {
@@ -363,21 +336,17 @@ func getReportFrequency(api plugin.API) (time.Duration, error) {
 		return 0, fmt.Errorf("json.Unmarshal: %w", err)
 	}
 
-	if minutes <= 0 {
-		return defaultReportFrequency, nil
-	}
-
 	return time.Duration(minutes) * time.Minute, nil
 }
 
-func setReportFrequency(api plugin.API, client *nagios.Client, parameters []string) string {
+func (p *Plugin) setReportFrequency(parameters []string) string {
 	if len(parameters) != 1 {
 		return "You must supply exactly one parameter (number of minutes)."
 	}
 
 	i, err := strconv.Atoi(parameters[0])
 	if err != nil {
-		api.LogError("Atoi", logErrorKey, err)
+		p.API.LogError("Atoi", logErrorKey, err)
 		return settingReportFrequencyUnsuccessful
 	}
 
@@ -387,14 +356,18 @@ func setReportFrequency(api plugin.API, client *nagios.Client, parameters []stri
 
 	b, err := json.Marshal(i)
 	if err != nil {
-		api.LogError("Marshal", logErrorKey, err)
+		p.API.LogError("Marshal", logErrorKey, err)
 		return settingReportFrequencyUnsuccessful
 	}
 
-	if err := api.KVSet(reportFrequencyKey, b); err != nil {
-		api.LogError("KVSet", logErrorKey, err)
+	if err := p.API.KVSet(reportFrequencyKey, b); err != nil {
+		p.API.LogError("KVSet", logErrorKey, err)
 		return settingReportFrequencyUnsuccessful
 	}
 
 	return "Report frequency set successfully."
+}
+
+func setReportFrequency(p *Plugin, channelID string, parameters []string) string {
+	return p.setReportFrequency(parameters)
 }
