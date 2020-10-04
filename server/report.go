@@ -12,15 +12,15 @@ import (
 
 const (
 	gettingReportUnsuccessful = "Getting monitoring report unsuccessful"
-	maximumReportListLength   = 50
+	maximumReportLength       = 50
 )
 
 func gettingReportUnsuccessfulMessage(reportPart, message string) string {
 	return fmt.Sprintf("%s (%s): %s", gettingReportUnsuccessful, reportPart, message)
 }
 
-func reportPreamble() string {
-	return fmt.Sprintf("#### :bar_chart: System monitoring report (%s)\n\n", time.Now().Format(time.UnixDate))
+func reportPreamble(t time.Time) string {
+	return fmt.Sprintf("#### :bar_chart: System monitoring report (%s)\n\n", t.Format(time.UnixDate))
 }
 
 func formatHostCount(count nagios.HostCount) string {
@@ -49,15 +49,16 @@ func formatHostList(list nagios.HostList) string {
 	b.WriteString("##### HOST LIST\n\n")
 
 	var abnormalOnly bool
-	if len(list.Data.HostList) > maximumReportListLength {
+	if len(list.Data.HostList) > maximumReportLength {
 		abnormalOnly = true
 		b.WriteString("**Too many hosts. Showing only abnormal state hosts.**\n\n")
 	}
 
 	var linesWritten int
 	for k, v := range list.Data.HostList {
-		if linesWritten == maximumReportListLength {
-			b.WriteString("\n**Skipped the rest of the hosts.**")
+		if linesWritten == maximumReportLength {
+			b.WriteString("\n\n**Skipped the rest of the hosts.**")
+			break
 		}
 
 		var state string
@@ -75,6 +76,10 @@ func formatHostList(list nagios.HostList) string {
 		}
 		b.WriteString(fmt.Sprintf("%s `%s` %s", emoji(state), k, strings.ToUpper(state)))
 		linesWritten++
+	}
+
+	if linesWritten == 0 {
+		b.WriteString("No hosts to show.")
 	}
 
 	return b.String()
@@ -97,40 +102,33 @@ func formatServiceCount(count nagios.ServiceCount) string {
 	return b.String()
 }
 
-func calculateServiceState(rawMessage json.RawMessage) string {
-	var states map[string]json.RawMessage
+type extractedService struct {
+	name, state string
+}
 
-	if err := json.Unmarshal(rawMessage, &states); err != nil {
-		return unknownState
+// extractServices returns a slice of extractedService, extracted from
+// rawMessage. It returns a slice with single element initialized to a
+// unknownState state if it fails to process rawMessage.
+func extractServices(rawMessage json.RawMessage) []extractedService {
+	var rawStates map[string]json.RawMessage
+
+	if err := json.Unmarshal(rawMessage, &rawStates); err != nil {
+		return []extractedService{{state: unknownState}}
 	}
 
-	counts := make(map[string]int)
+	var services []extractedService
 
-	for _, v := range states {
+	for k, v := range rawStates {
 		var state string
 
 		if err := json.Unmarshal(v, &state); err != nil {
 			state = unknownState
 		}
 
-		counts[state]++
+		services = append(services, extractedService{name: k, state: state})
 	}
 
-	var maxKey string
-	var maxVal int
-
-	for k, v := range counts {
-		if v > maxVal {
-			maxKey = k
-			maxVal = v
-		}
-	}
-
-	if maxVal == 0 {
-		return okState
-	}
-
-	return maxKey
+	return services
 }
 
 func formatServiceList(list nagios.ServiceList) string {
@@ -138,35 +136,67 @@ func formatServiceList(list nagios.ServiceList) string {
 		return gettingReportUnsuccessfulMessage("service list", list.Result.TypeText)
 	}
 
+	var reportLength int
+
+	hostToServices := make(map[string][]extractedService)
+
+	for k, v := range list.Data.ServiceList {
+		services := extractServices(v)
+
+		reportLength += len(services) + 1 // add 1 for a line with hostname.
+
+		hostToServices[k] = services
+	}
+
 	var b strings.Builder
 
 	b.WriteString("##### SERVICE LIST\n\n")
 
 	var abnormalOnly bool
-	if len(list.Data.ServiceList) > maximumReportListLength {
+
+	if reportLength > maximumReportLength {
 		abnormalOnly = true
 		b.WriteString("**Too many services. Showing only abnormal state services.**\n\n")
 	}
 
 	var linesWritten int
-	for k, v := range list.Data.ServiceList {
-		if linesWritten == maximumReportListLength {
-			b.WriteString("\n**Skipped the rest of the hosts.**")
-		}
 
-		state := calculateServiceState(v)
+	const theEnd = "\n\n**Skipped the rest of the services.**"
 
-		if state == okState && abnormalOnly {
-			continue
-		}
+	for host, services := range hostToServices {
+		for i, s := range services {
+			if s.state == okState && abnormalOnly {
+				continue
+			}
 
-		if linesWritten > 0 {
-			b.WriteRune('\n')
+			if i == 0 {
+				if linesWritten > 0 {
+					b.WriteRune('\n')
+				}
+				b.WriteString(fmt.Sprintf("`%s`:", host))
+				linesWritten++
+
+				if linesWritten == maximumReportLength {
+					b.WriteString(theEnd)
+					goto end
+				}
+			}
+
+			b.WriteString(fmt.Sprintf("\n\t%s `%s` %s", emoji(s.state), s.name, strings.ToUpper(s.state)))
+			linesWritten++
+
+			if linesWritten == maximumReportLength {
+				b.WriteString(theEnd)
+				goto end
+			}
 		}
-		b.WriteString(fmt.Sprintf("%s `%s` %s", emoji(state), k, strings.ToUpper(state)))
-		linesWritten++
 	}
 
+	if linesWritten == 0 {
+		b.WriteString("No services to show.")
+	}
+
+end: // Dijkstra probably hates me.
 	return b.String()
 }
 
@@ -239,7 +269,7 @@ func (p *Plugin) sendMonitoringReport(channelID string) error {
 
 	if err := p.sendMessages(
 		channelID,
-		reportPreamble(),
+		reportPreamble(time.Now()),
 		formatHostCount(hostCount),
 		formatHostList(hostList),
 		formatServiceCount(serviceCount),
