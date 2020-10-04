@@ -97,8 +97,77 @@ func formatServiceCount(count nagios.ServiceCount) string {
 	return b.String()
 }
 
+func calculateServiceState(rawMessage json.RawMessage) string {
+	var states map[string]json.RawMessage
+
+	if err := json.Unmarshal(rawMessage, &states); err != nil {
+		return unknownState
+	}
+
+	counts := make(map[string]int)
+
+	for _, v := range states {
+		var state string
+
+		if err := json.Unmarshal(v, &state); err != nil {
+			state = unknownState
+		}
+
+		counts[state]++
+	}
+
+	var maxKey string
+	var maxVal int
+
+	for k, v := range counts {
+		if v > maxVal {
+			maxKey = k
+			maxVal = v
+		}
+	}
+
+	if maxVal == 0 {
+		return okState
+	}
+
+	return maxKey
+}
+
 func formatServiceList(list nagios.ServiceList) string {
-	return "Fix me! A service needs to have its status calculated."
+	if list.Result.TypeText != resultTypeTextSuccess {
+		return gettingReportUnsuccessfulMessage("service list", list.Result.TypeText)
+	}
+
+	var b strings.Builder
+
+	b.WriteString("##### SERVICE LIST\n\n")
+
+	var abnormalOnly bool
+	if len(list.Data.ServiceList) > maximumReportListLength {
+		abnormalOnly = true
+		b.WriteString("**Too many services. Showing only abnormal state services.**\n\n")
+	}
+
+	var linesWritten int
+	for k, v := range list.Data.ServiceList {
+		if linesWritten == maximumReportListLength {
+			b.WriteString("\n**Skipped the rest of the hosts.**")
+		}
+
+		state := calculateServiceState(v)
+
+		if state == okState && abnormalOnly {
+			continue
+		}
+
+		if linesWritten > 0 {
+			b.WriteRune('\n')
+		}
+		b.WriteString(fmt.Sprintf("%s `%s` %s", emoji(state), k, strings.ToUpper(state)))
+		linesWritten++
+	}
+
+	return b.String()
 }
 
 func (p *Plugin) sendMessages(channelID string, messages ...string) error {
