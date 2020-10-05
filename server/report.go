@@ -49,7 +49,7 @@ func formatHostList(list nagios.HostList) string {
 	b.WriteString("##### HOST LIST\n\n")
 
 	var abnormalOnly bool
-	if len(list.Data.HostList) > maximumReportLength {
+	if len(list.Data.HostList) >= maximumReportLength {
 		abnormalOnly = true
 		b.WriteString("**Too many hosts. Showing only abnormal state hosts.**\n\n")
 	}
@@ -154,7 +154,7 @@ func formatServiceList(list nagios.ServiceList) string {
 
 	var abnormalOnly bool
 
-	if reportLength > maximumReportLength {
+	if reportLength >= maximumReportLength {
 		abnormalOnly = true
 		b.WriteString("**Too many services. Showing only abnormal state services.**\n\n")
 	}
@@ -164,12 +164,15 @@ func formatServiceList(list nagios.ServiceList) string {
 	const theEnd = "\n\n**Skipped the rest of the services.**"
 
 	for host, services := range hostToServices {
-		for i, s := range services {
+		var hostWritten bool
+		for _, s := range services {
 			if s.state == okState && abnormalOnly {
 				continue
 			}
 
-			if i == 0 {
+			if !hostWritten {
+				hostWritten = true
+
 				if linesWritten > 0 {
 					b.WriteRune('\n')
 				}
@@ -182,7 +185,7 @@ func formatServiceList(list nagios.ServiceList) string {
 				}
 			}
 
-			b.WriteString(fmt.Sprintf("\n\t%s `%s` %s", emoji(s.state), s.name, strings.ToUpper(s.state)))
+			b.WriteString(fmt.Sprintf("\n- %s `%s` %s", emoji(s.state), s.name, strings.ToUpper(s.state)))
 			linesWritten++
 
 			if linesWritten == maximumReportLength {
