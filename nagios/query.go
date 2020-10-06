@@ -8,7 +8,7 @@ type Query struct {
 }
 
 func (q Query) SetNonEmpty(key, value string) {
-	if len(value) > 0 {
+	if len(value) > 0 && value != "0" {
 		q.URLQuery.Set(key, value)
 	}
 }
