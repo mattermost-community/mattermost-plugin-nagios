@@ -181,16 +181,16 @@ func formatServiceList(list nagios.ServiceList) string {
 
 				if linesWritten == maximumReportLength {
 					b.WriteString(theEnd)
-					goto end
+					return b.String()
 				}
 			}
 
-			b.WriteString(fmt.Sprintf("\n- %s `%s` %s", emoji(s.state), s.name, strings.ToUpper(s.state)))
+			b.WriteString(fmt.Sprintf("\n\n- %s `%s` %s", emoji(s.state), s.name, strings.ToUpper(s.state)))
 			linesWritten++
 
 			if linesWritten == maximumReportLength {
 				b.WriteString(theEnd)
-				goto end
+				return b.String()
 			}
 		}
 	}
@@ -199,7 +199,6 @@ func formatServiceList(list nagios.ServiceList) string {
 		b.WriteString("No services to show.")
 	}
 
-end: // Dijkstra probably hates me.
 	return b.String()
 }
 
