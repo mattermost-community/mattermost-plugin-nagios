@@ -13,6 +13,7 @@ const (
 
 const (
 	bangBangEmoji             = ":bangbang:"
+	barChartEmoji             = ":bar_chart:"
 	smallRedTriangleDownEmoji = ":small_red_triangle_down:"
 	whiteCheckMarkEmoji       = ":white_check_mark:"
 	hourglassFlowingSandEmoji = ":hourglass_flowing_sand:"

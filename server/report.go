@@ -20,7 +20,7 @@ func gettingReportUnsuccessfulMessage(reportPart, message string) string {
 }
 
 func reportPreamble(t time.Time) string {
-	return fmt.Sprintf("#### :bar_chart: System monitoring report (%s)\n\n", t.Format(time.UnixDate))
+	return fmt.Sprintf("#### %s System monitoring report (%s)\n\n", barChartEmoji, t.Format(time.UnixDate))
 }
 
 func formatHostCount(count nagios.HostCount) string {
