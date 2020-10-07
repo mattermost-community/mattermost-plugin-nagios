@@ -174,7 +174,7 @@ func formatServiceList(list nagios.ServiceList) string {
 				hostWritten = true
 
 				if linesWritten > 0 {
-					b.WriteRune('\n')
+					b.WriteString("\n\n")
 				}
 				b.WriteString(fmt.Sprintf("`%s`:", host))
 				linesWritten++
@@ -183,9 +183,13 @@ func formatServiceList(list nagios.ServiceList) string {
 					b.WriteString(theEnd)
 					return b.String()
 				}
+
+				// This additional newline produces better Markdown, but we want
+				// to write it only if theEnd hasn't been written.
+				b.WriteRune('\n')
 			}
 
-			b.WriteString(fmt.Sprintf("\n\n- %s `%s` %s", emoji(s.state), s.name, strings.ToUpper(s.state)))
+			b.WriteString(fmt.Sprintf("\n- %s `%s` %s", emoji(s.state), s.name, strings.ToUpper(s.state)))
 			linesWritten++
 
 			if linesWritten == maximumReportLength {
@@ -227,7 +231,7 @@ func (p *Plugin) sendMonitoringReport(channelID string) error {
 	var hostCount nagios.HostCount
 
 	if err := p.client.Query(hostCountReq, &hostCount); err != nil {
-		return fmt.Errorf("clent.Query: %w", err)
+		return fmt.Errorf("client.Query: %w", err)
 	}
 
 	hostListReq := nagios.HostListRequest{
@@ -240,7 +244,7 @@ func (p *Plugin) sendMonitoringReport(channelID string) error {
 	var hostList nagios.HostList
 
 	if err := p.client.Query(hostListReq, &hostList); err != nil {
-		return fmt.Errorf("clent.Query: %w", err)
+		return fmt.Errorf("client.Query: %w", err)
 	}
 
 	serviceCountReq := nagios.ServiceCountRequest{
@@ -253,7 +257,7 @@ func (p *Plugin) sendMonitoringReport(channelID string) error {
 	var serviceCount nagios.ServiceCount
 
 	if err := p.client.Query(serviceCountReq, &serviceCount); err != nil {
-		return fmt.Errorf("clent.Query: %w", err)
+		return fmt.Errorf("client.Query: %w", err)
 	}
 
 	serviceListReq := nagios.ServiceListRequest{
@@ -266,7 +270,7 @@ func (p *Plugin) sendMonitoringReport(channelID string) error {
 	var serviceList nagios.ServiceList
 
 	if err := p.client.Query(serviceListReq, &serviceList); err != nil {
-		return fmt.Errorf("clent.Query: %w", err)
+		return fmt.Errorf("client.Query: %w", err)
 	}
 
 	if err := p.sendMessages(
