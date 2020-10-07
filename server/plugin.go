@@ -27,6 +27,10 @@ type Plugin struct {
 	client *nagios.Client
 
 	botUserID string
+
+	commandHandlers map[string]commandHandlerFunc
+
+	subscriptionStop chan<- bool
 }
 
 // ServeHTTP demonstrates a plugin that handles HTTP requests by greeting the world.
@@ -89,7 +93,7 @@ func (p *Plugin) OnActivate() error {
 		return fmt.Errorf("p.API.SetProfileImage: %w", err)
 	}
 
-	if err := p.API.RegisterCommand(nagiosCommand); err != nil {
+	if err := p.API.RegisterCommand(p.getCommand()); err != nil {
 		return fmt.Errorf("p.API.RegisterCommand: %w", err)
 	}
 
