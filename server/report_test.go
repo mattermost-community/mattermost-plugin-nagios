@@ -137,7 +137,7 @@ func Test_formatHostList(t *testing.T) {
 				Result: nagios.Result{
 					TypeText: resultTypeTextSuccess,
 				},
-				Data: generateHomogenousHostListData(upState, maximumReportLength),
+				Data: generateHomogenousHostListData(upState, maximumReportLength+1),
 			},
 			want: "##### HOST LIST\n\n**Too many hosts. Showing only abnormal" +
 				" state hosts.**\n\nNo hosts to show.",
@@ -188,7 +188,7 @@ func Test_formatServiceCount(t *testing.T) {
 	}
 }
 
-func extractedServicesEqual(a, b []extractedService) bool {
+func extractedServicesEqual(a, b extractedServices) bool {
 	m := make(map[string]string)
 
 	for _, v := range a {
@@ -208,7 +208,7 @@ func Test_extractServices(t *testing.T) {
 	tests := []struct {
 		name       string
 		rawMessage json.RawMessage
-		want       []extractedService
+		want       extractedServices
 	}{
 		{
 			name: "part of a real response",
@@ -235,7 +235,7 @@ func Test_extractServices(t *testing.T) {
 				`itical","Port 8 Bandwidth":"ok","Port 8 Status":"critical","` +
 				`Port 9 Bandwidth":"ok","Port 9 Status":"ok","Youtube Usage":` +
 				`"warning"}`),
-			want: []extractedService{
+			want: extractedServices{
 				{
 					name:  "Bandwidth Spike",
 					state: okState,
@@ -511,7 +511,7 @@ func Test_formatServiceList(t *testing.T) {
 				Result: nagios.Result{
 					TypeText: resultTypeTextSuccess,
 				},
-				Data: mustGenerateHomogenousServiceListData(okState, 1, maximumReportLength-1),
+				Data: mustGenerateHomogenousServiceListData(okState, 1, maximumReportLength),
 			},
 			want: "##### SERVICE LIST\n\n**Too many services. Showing only ab" +
 				"normal state services.**\n\nNo services to show.",
@@ -522,7 +522,7 @@ func Test_formatServiceList(t *testing.T) {
 				Result: nagios.Result{
 					TypeText: resultTypeTextSuccess,
 				},
-				Data: mustGenerateHomogenousServiceListData(okState, maximumReportLength, 0),
+				Data: mustGenerateHomogenousServiceListData(okState, maximumReportLength+1, 0),
 			},
 			want: "##### SERVICE LIST\n\n**Too many services. Showing only ab" +
 				"normal state services.**\n\nNo services to show.",
