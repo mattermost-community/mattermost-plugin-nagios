@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	gettingReportUnsuccessful = "Getting monitoring report unsuccessful"
+	gettingReportUnsuccessful = "Getting system monitoring report unsuccessful"
 	maximumReportLength       = 50
 )
 
@@ -157,9 +157,9 @@ func (e extractedServices) Swap(i, j int) {
 	e[i], e[j] = e[j], e[i]
 }
 
-// extractServices returns extractedServices, extracted from rawMessage. It
-// returns a slice with single element initialized to a unknownState state if it
-// fails to process rawMessage.
+// extractServices returns extractedServices, extracted from rawMessage. It will
+// return a single-element slice initialized to unknownState state if it fails
+// to process rawMessage.
 func extractServices(rawMessage json.RawMessage) extractedServices {
 	var rawStates map[string]json.RawMessage
 

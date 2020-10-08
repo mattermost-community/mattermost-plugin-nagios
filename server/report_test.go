@@ -26,7 +26,8 @@ func Test_gettingReportUnsuccessfulMessage(t *testing.T) {
 				reportPart: "a part",
 				message:    "a message",
 			},
-			want: "Getting monitoring report unsuccessful (a part): a message",
+			want: "Getting system monitoring report unsuccessful (a part): a " +
+				"message",
 		},
 	}
 	for _, tt := range tests {
@@ -90,6 +91,349 @@ func Test_formatHostCount(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := formatHostCount(tt.count); got != tt.want {
 				t.Errorf("formatHostCount() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func extractedHostsEqual(a, b extractedHosts) bool {
+	m := make(map[string]string)
+
+	for _, v := range a {
+		m[v.name] = v.state
+	}
+
+	for _, v := range b {
+		if v.state != m[v.name] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func Test_extractHosts(t *testing.T) {
+	tests := []struct {
+		name         string
+		hostListData nagios.HostListData
+		want         extractedHosts
+	}{
+		{
+			name: "invalid JSON",
+			hostListData: nagios.HostListData{
+				HostList: map[string]json.RawMessage{"test": []byte(`🐙`)},
+			},
+			want: extractedHosts{{name: "test", state: unknownState}},
+		},
+		{
+			name: "part of a real response",
+			hostListData: nagios.HostListData{
+				HostList: map[string]json.RawMessage{
+					"Firewall":                       []byte(`"up"`),
+					"Log-Server.nagios.local":        []byte(`"up"`),
+					"Log-Server2.nagios.local":       []byte(`"up"`),
+					"NOAA":                           []byte(`"up"`),
+					"Netw":                           []byte(`"pending"`),
+					"Network-Analyzer.nagios.":       []byte(`"pending"`),
+					"Network-Analyzer.nagios.local":  []byte(`"up"`),
+					"Network-Analyzer2.":             []byte(`"pending"`),
+					"Network-Analyzer2.nagios.local": []byte(`"up"`),
+					"Router":                         []byte(`"up"`),
+					"centos-gateway.nagios.local":    []byte(`"up"`),
+					"centos-switch.nagios.local":     []byte(`"up"`),
+					"centos1.nagios.local":           []byte(`"up"`),
+					"centos2.nagios.local":           []byte(`"up"`),
+					"centos3.nagios.local":           []byte(`"up"`),
+					"centos4.nagios.local":           []byte(`"up"`),
+					"centos5.nagios.local":           []byte(`"up"`),
+					"europa.nagios.local":            []byte(`"down"`),
+					"exchange.nagios.org":            []byte(`"up"`),
+					"fedora-gateway.nagios.local":    []byte(`"up"`),
+					"fedora-switch.nagios.local":     []byte(`"up"`),
+					"fedora1.nagios.local":           []byte(`"up"`),
+					"gateway.nagios.local":           []byte(`"up"`),
+					"linux-snmp1.nagios.local":       []byte(`"up"`),
+					"linux-snmp2.nagios.local":       []byte(`"up"`),
+					"linux-snmp3.nagios.local":       []byte(`"up"`),
+					"linuxsnmp-gateway.nagios.local": []byte(`"up"`),
+					"linuxsnmp-switch.nagios.local":  []byte(`"up"`),
+					"localhost":                      []byte(`"up"`),
+					"mssql1.nagios.l":                []byte(`"pending"`),
+					"mssql1.nagios.local":            []byte(`"up"`),
+					"mssql2.nagios.local":            []byte(`"up"`),
+					"mssql3.nagios.local":            []byte(`"up"`),
+					"mysql1.nagios.local":            []byte(`"up"`),
+					"mysql2.nagios.local":            []byte(`"up"`),
+					"mysql3.nagios.local":            []byte(`"up"`),
+					"nagiosls.demos.nagios.com":      []byte(`"pending"`),
+					"rhel-gateway.nagios.local":      []byte(`"up"`),
+					"rhel-switch.nagios.local":       []byte(`"up"`),
+					"rhel1.nagios.local":             []byte(`"up"`),
+					"rhel2.nagios.local":             []byte(`"up"`),
+					"rhel3.nagios.local":             []byte(`"up"`),
+					"rhel4.nagios.local":             []byte(`"up"`),
+					"secure.nagios.com":              []byte(`"up"`),
+					"somehost":                       []byte(`"pending"`),
+					"switch27.nagios.local":          []byte(`"up"`),
+					"vs1.nagios.org":                 []byte(`"up"`),
+					"windows-gateway.nagios.local":   []byte(`"up"`),
+					"windows-switch.nagios.local":    []byte(`"up"`),
+					"windowserver1.nagios.local":     []byte(`"up"`),
+					"windowserver2.nagios.local":     []byte(`"up"`),
+					"windowserver3.nagios.local":     []byte(`"up"`),
+					"www.acme.com":                   []byte(`"down"`),
+					"www.chaoticmoon.com":            []byte(`"down"`),
+					"www.cnn.com":                    []byte(`"up"`),
+					"www.nagios-plugins.org":         []byte(`"up"`),
+					"www.nagios.com":                 []byte(`"up"`),
+					"www.nagios.org":                 []byte(`"up"`),
+					"www.twitter.com":                []byte(`"up"`),
+				},
+			},
+			want: extractedHosts{
+				{
+					name:  "Firewall",
+					state: upState,
+				},
+				{
+					name:  "Log-Server.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "Log-Server2.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "NOAA",
+					state: upState,
+				},
+				{
+					name:  "Netw",
+					state: pendingState,
+				},
+				{
+					name:  "Network-Analyzer.nagios.",
+					state: pendingState,
+				},
+				{
+					name:  "Network-Analyzer.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "Network-Analyzer2.",
+					state: pendingState,
+				},
+				{
+					name:  "Network-Analyzer2.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "Router",
+					state: upState,
+				},
+				{
+					name:  "centos-gateway.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "centos-switch.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "centos1.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "centos2.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "centos3.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "centos4.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "centos5.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "europa.nagios.local",
+					state: downState,
+				},
+				{
+					name:  "exchange.nagios.org",
+					state: upState,
+				},
+				{
+					name:  "fedora-gateway.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "fedora-switch.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "fedora1.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "gateway.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "linux-snmp1.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "linux-snmp2.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "linux-snmp3.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "linuxsnmp-gateway.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "linuxsnmp-switch.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "localhost",
+					state: upState,
+				},
+				{
+					name:  "mssql1.nagios.l",
+					state: pendingState,
+				},
+				{
+					name:  "mssql1.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "mssql2.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "mssql3.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "mysql1.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "mysql2.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "mysql3.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "nagiosls.demos.nagios.com",
+					state: pendingState,
+				},
+				{
+					name:  "rhel-gateway.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "rhel-switch.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "rhel1.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "rhel2.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "rhel3.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "rhel4.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "secure.nagios.com",
+					state: upState,
+				},
+				{
+					name:  "somehost",
+					state: pendingState,
+				},
+				{
+					name:  "switch27.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "vs1.nagios.org",
+					state: upState,
+				},
+				{
+					name:  "windows-gateway.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "windows-switch.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "windowserver1.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "windowserver2.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "windowserver3.nagios.local",
+					state: upState,
+				},
+				{
+					name:  "www.acme.com",
+					state: downState,
+				},
+				{
+					name:  "www.chaoticmoon.com",
+					state: downState,
+				},
+				{
+					name:  "www.cnn.com",
+					state: upState,
+				},
+				{
+					name:  "www.nagios-plugins.org",
+					state: upState,
+				},
+				{
+					name:  "www.nagios.com",
+					state: upState,
+				},
+				{
+					name:  "www.nagios.org",
+					state: upState,
+				},
+				{
+					name:  "www.twitter.com",
+					state: upState,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := extractHosts(tt.hostListData); !extractedHostsEqual(got, tt.want) {
+				t.Errorf("extractHosts() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -210,6 +554,11 @@ func Test_extractServices(t *testing.T) {
 		rawMessage json.RawMessage
 		want       extractedServices
 	}{
+		{
+			name:       "invalid JSON",
+			rawMessage: []byte(`🐙`),
+			want:       extractedServices{{state: unknownState}},
+		},
 		{
 			name: "part of a real response",
 			rawMessage: []byte(`{"Bandwidth Spike":"ok","Ping":"ok","Port 1 B` +
