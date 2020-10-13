@@ -26,14 +26,22 @@ const manifestStr = `
     "executable": ""
   },
   "settings_schema": {
-    "header": "To report an issue, make a suggestion or a contribution, or fork your own version of the plugin, [check the repository](https://github.com/ulumuri/mattermost-plugin-nagios).",
-    "footer": "",
+    "header": "Configure your Nagios plugin settings below",
+    "footer": "To report an issue, make a suggestion or a contribution, or fork your own version of the plugin, [check the repository](https://github.com/ulumuri/mattermost-plugin-nagios).",
     "settings": [
       {
         "key": "NagiosURL",
         "display_name": "Nagios URL",
         "type": "text",
         "help_text": "The URL for your Nagios instance. Must start with http:// or https://.",
+        "placeholder": "",
+        "default": null
+      },
+      {
+        "key": "Token",
+        "display_name": "Token",
+        "type": "generated",
+        "help_text": "Token for the configuration files watcher.",
         "placeholder": "",
         "default": null
       }

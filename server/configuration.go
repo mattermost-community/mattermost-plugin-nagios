@@ -22,6 +22,7 @@ import (
 // copy appropriate for your types.
 type configuration struct {
 	NagiosURL string
+	Token     string
 }
 
 func (c *configuration) isValid() error {

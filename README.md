@@ -1,117 +1,57 @@
-# Plugin Starter Template [![CircleCI branch](https://img.shields.io/circleci/project/github/mattermost/mattermost-plugin-starter-template/master.svg)](https://circleci.com/gh/mattermost/mattermost-plugin-starter-template)
+# Mattermost Nagios Plugin
 
-This plugin serves as a starting point for writing a Mattermost plugin. Feel free to base your own plugin off this repository.
+<!-- TODO(amwolff): add CI badges and stuff. -->
 
-To learn more about plugins, see [our plugin documentation](https://developers.mattermost.com/extend/plugins/).
+**Maintainers**: @amwolff & @DanielSz50
 
-## Getting Started
-Use GitHub's template feature to make a copy of this repository by clicking the "Use this template" button.
+A Nagios plugin for Mattermost. Supports Nagios Core >= 4.4.x.
 
-Alternatively shallow clone the repository matching your plugin name:
-```
-git clone --depth 1 https://github.com/mattermost/mattermost-plugin-starter-template com.example.my-plugin
-```
+## About
 
-Note that this project uses [Go modules](https://github.com/golang/go/wiki/Modules). Be sure to locate the project outside of `$GOPATH`.
+This plugin allows you to
 
-Edit `plugin.json` with your `id`, `name`, and `description`:
-```
-{
-    "id": "com.example.my-plugin",
-    "name": "My Plugin",
-    "description": "A plugin to enhance Mattermost."
-}
-```
+- [x] get logs to specific systems without leaving the Mattermost
+    - get alerts and notifications instantly delivered, resembling the `showlog.cgi` UI
+- [x] receive system monitoring reports on a subscribed channel
+    - you will be frequently informed which hosts and/or services have abnormal state
+- [ ] (in progress) receive notifications about changes to configuration on a subscribed channel
+    - anytime a change has been made to Nagios configuration, you will receive a diff between the old and the new version
 
-Build your plugin:
-```
-make
-```
+Ultimately, this will make you or your team more productive and make the experience with Nagios smoother.
 
-This will produce a single plugin file (with support for multiple architectures) for upload to your Mattermost server:
+### Audience
 
-```
-dist/com.example.my-plugin.tar.gz
-```
+This guide is for Mattermost System Admins setting up the Nagios plugin and Mattermost users who want information about the plugin functionality.
 
-## Development
+### Important notice
 
-To avoid having to manually install your plugin, build and deploy your plugin using one of the following options.
+If you are a Nagios admin/user and think there is something this plugin lacks or something that it does could be done the other way around, let us know!
+We are trying to develop this plugin basing on users' needs.
+If there is a certain feature you or your team needs, open up an issue and explain your needs.
+We will be happy to help.
 
-### Deploying with Local Mode
+## Installation
 
-If your Mattermost server is running locally, you can enable [local mode](https://docs.mattermost.com/administration/mmctl-cli-tool.html#local-mode) to streamline deploying your plugin. Edit your server configuration as follows:
+1. Download the latest version of the plugin from the [releases page](https://github.com/ulumuri/mattermost-plugin-nagios/releases)
+2. In Mattermost, go to **System Console → Plugins → Management**
+3. Upload the plugin in the **Upload Plugin** section
+4. Configure the plugin before you enable it
 
-```json
-{
-    "ServiceSettings": {
-        ...
-        "EnableLocalMode": true,
-        "LocalModeSocketLocation": "/var/tmp/mattermost_local.socket"
-    }
-}
-```
+## Configuration
 
-and then deploy your plugin:
-```
-make deploy
-```
+1. Enter the URL for your Nagios instance
+    1. In Mattermost, go to **System Console → Plugins → Nagios**
+    2. Set the **Nagios URL**
+        1. Remember to add `http://` or `https://` at the beginning!
+        2. Example URL: `https://nagios.fedoraproject.org`
+2. Click *Save* to save the settings
+3. In Mattermost, go to **System Console → Plugins → Management** and click *Enable* underneath the Nagios plugin
+4. The plugin is now ready to use! 🎉
 
-You may also customize the Unix socket path:
-```
-export MM_LOCALSOCKETPATH=/var/tmp/alternate_local.socket
-make deploy
-```
+<!-- TODO(amwolff): add setup instructions for the configuration files watcher. -->
 
-If developing a plugin with a webapp, watch for changes and deploy those automatically:
-```
-export MM_SERVICESETTINGS_SITEURL=http://localhost:8065
-export MM_ADMIN_TOKEN=j44acwd8obn78cdcx7koid4jkr
-make watch
-```
+## Using the plugin
 
-### Deploying with credentials
+### Slash commands
 
-Alternatively, you can authenticate with the server's API with credentials:
-```
-export MM_SERVICESETTINGS_SITEURL=http://localhost:8065
-export MM_ADMIN_USERNAME=admin
-export MM_ADMIN_PASSWORD=password
-make deploy
-```
-
-or with a [personal access token](https://docs.mattermost.com/developer/personal-access-tokens.html):
-```
-export MM_SERVICESETTINGS_SITEURL=http://localhost:8065
-export MM_ADMIN_TOKEN=j44acwd8obn78cdcx7koid4jkr
-make deploy
-```
-
-## Q&A
-
-### How do I make a server-only or web app-only plugin?
-
-Simply delete the `server` or `webapp` folders and remove the corresponding sections from `plugin.json`. The build scripts will skip the missing portions automatically.
-
-### How do I include assets in the plugin bundle?
-
-Place them into the `assets` directory. To use an asset at runtime, build the path to your asset and open as a regular file:
-
-```go
-bundlePath, err := p.API.GetBundlePath()
-if err != nil {
-    return errors.Wrap(err, "failed to get bundle path")
-}
-
-profileImage, err := ioutil.ReadFile(filepath.Join(bundlePath, "assets", "profile_image.png"))
-if err != nil {
-    return errors.Wrap(err, "failed to read profile image")
-}
-
-if appErr := p.API.SetProfileImage(userID, profileImage); appErr != nil {
-    return errors.Wrap(err, "failed to set profile image")
-}
-```
-
-### How do I build the plugin with unminified JavaScript?
-Setting the `MM_DEBUG` environment variable will invoke the debug builds. The simplist way to do this is to simply include this variable in your calls to `make` (e.g. `make dist MM_DEBUG=1`).
+## Contributing
