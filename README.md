@@ -7,6 +7,7 @@
 A Nagios plugin for Mattermost. Supports Nagios Core >= 4.4.x.
 
 ## Table of contents
+
 - [About](https://github.com/ulumuri/mattermost-plugin-nagios/#about)
     - [Audience](https://github.com/ulumuri/mattermost-plugin-nagios/#audience)
     - [Important notice](https://github.com/ulumuri/mattermost-plugin-nagios/#important-notice)
@@ -84,7 +85,7 @@ We will be happy to help.
 
 ## Updating the plugin
 
-To update the plugin repeat the [Installation](https://github.com/ulumuri/mattermost-plugin-nagios/#installation) step.
+To update the plugin repeat the [Installing the plugin](https://github.com/ulumuri/mattermost-plugin-nagios/#installing-the-plugin) step.
 
 ## Using the plugin
 
@@ -119,7 +120,7 @@ Example: `/nagios get-logs alerts`
 
 ###### host
 
-`get-logs <alerts|notifications> host <host>`
+`get-logs <alerts|notifications> host <host name>`
 
 This optional parameter allows you to get alerts or notifications from a specific host.
 
@@ -127,7 +128,7 @@ Example: `/nagios get-logs alerts host bvmhost-p09-02.iad2.fedoraproject.org`
 
 ###### service
 
-`get-logs <alerts|notifications> service <service>`
+`get-logs <alerts|notifications> service <service description>`
 
 This optional parameter allows you to get alerts or notifications from a specific service.
 
@@ -137,7 +138,7 @@ Example: `/nagios get-logs alerts service Swap-Is-Low`
 
 `set-logs-limit <count>`
 
-This action allows you to limit the number of logs fetched by `get-logs`.
+This action allows you to limit the number of logs `get-logs` fetches.
 
 Example: `/nagios set-logs-limit 100`
 
