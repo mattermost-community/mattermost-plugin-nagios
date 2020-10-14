@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"path/filepath"
 	"sync"
 
@@ -13,15 +12,16 @@ import (
 	"github.com/ulumuri/go-nagios/nagios"
 )
 
-// Plugin implements the interface expected by the Mattermost server to communicate between the server and plugin processes.
+// Plugin implements the interface expected by the Mattermost server to
+// communicate between the server and plugin processes.
 type Plugin struct {
 	plugin.MattermostPlugin
 
 	// configurationLock synchronizes access to the configuration.
 	configurationLock sync.RWMutex
 
-	// configuration is the active plugin configuration. Consult getConfiguration and
-	// setConfiguration for usage.
+	// configuration is the active plugin configuration. Consult
+	// getConfiguration and setConfiguration for usage.
 	configuration *configuration
 
 	client *nagios.Client
@@ -31,11 +31,6 @@ type Plugin struct {
 	commandHandlers map[string]commandHandlerFunc
 
 	subscriptionStop chan<- bool
-}
-
-// ServeHTTP demonstrates a plugin that handles HTTP requests by greeting the world.
-func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Hello, world!")
 }
 
 func (p *Plugin) setDefaultKV(key string, value interface{}) error {
