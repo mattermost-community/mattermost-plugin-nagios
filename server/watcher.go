@@ -7,7 +7,13 @@ import (
 )
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
-	if p.getConfiguration().Token != r.Header.Get("Authorization") {
+	token := p.getConfiguration().Token
+
+	if token == "" {
+		http.Error(w, "This functionality is not configured.", http.StatusNotImplemented)
+		return
+	}
+	if token != r.Header.Get("Authorization") {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
