@@ -15,6 +15,8 @@ const manifestStr = `
   "id": "nagios",
   "name": "Nagios",
   "description": "Nagios plugin for Mattermost",
+  "homepage_url": "https://github.com/ulumuri/mattermost-plugin-nagios",
+  "support_url": "https://github.com/ulumuri/mattermost-plugin-nagios/issues",
   "version": "1.0.0",
   "min_server_version": "5.12.0",
   "server": {
@@ -26,7 +28,7 @@ const manifestStr = `
     "executable": ""
   },
   "settings_schema": {
-    "header": "Configure your Nagios plugin settings below",
+    "header": "Having problems configuring the plugin? [Check the configuration guide](https://github.com/ulumuri/mattermost-plugin-nagios/#configuring-the-plugin).",
     "footer": "To report an issue, make a suggestion or a contribution, or fork your own version of the plugin, [check the repository](https://github.com/ulumuri/mattermost-plugin-nagios).",
     "settings": [
       {
@@ -41,7 +43,7 @@ const manifestStr = `
         "key": "Token",
         "display_name": "Token",
         "type": "generated",
-        "help_text": "Token for the configuration files watcher.",
+        "help_text": "The token for the configuration files watcher.",
         "placeholder": "",
         "default": null
       }
