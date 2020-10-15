@@ -17,7 +17,10 @@ func formatChange(change watcher.Change) string {
 
 	b.WriteString(fmt.Sprintf("**%s** has been modified", change.Name))
 	b.WriteString(" (-previous +actual):\n\n")
+
 	b.WriteString("```")
+
+	b.WriteRune('\n')
 
 	if utf8.RuneCountInString(change.Diff) > 16077 {
 		b.WriteString("File has been changed, but the diff is too long.")
@@ -31,27 +34,48 @@ func formatChange(change watcher.Change) string {
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
-	token := p.getConfiguration().Token
-
-	if token == "" {
-		http.Error(w, "This functionality is not configured.", http.StatusNotImplemented)
+	if r.Method != http.MethodPost {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-	if token != r.Header.Get("Authorization") {
+
+	token := p.getConfiguration().Token
+
+	const notConfigured = "This functionality is not configured."
+
+	if token == "" {
+		http.Error(w, notConfigured, http.StatusNotImplemented)
+		return
+	}
+	if token != r.Header.Get(watcher.TokenHeader) {
+		p.API.LogWarn("Changes handler called, but authentication failed")
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
+	channelID, err := getChangesChannel(p.API)
+	if err != nil {
+		p.API.LogError("getChangesChannel", logErrorKey, err)
+		return
+	}
+
+	if channelID == "" { // fast path, there is no subscription.
+		p.API.LogWarn("Changes handler called, but there is no subscription")
+		http.Error(w, notConfigured, http.StatusNotImplemented)
 		return
 	}
 
 	var change watcher.Change
 
 	if err := json.NewDecoder(r.Body).Decode(&change); err != nil {
+		p.API.LogError("Decode", logErrorKey, err)
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
 	post := &model.Post{
 		UserId:    p.botUserID,
-		ChannelId: "channelID",
+		ChannelId: channelID,
 		Message:   formatChange(change),
 	}
 

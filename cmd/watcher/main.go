@@ -11,15 +11,16 @@ import (
 	"github.com/mattermost/mattermost-plugin-starter-template/internal/watcher"
 )
 
+var (
+	dir   = flag.String("dir", "/usr/local/nagios/etc/", "Nagios configuration files directory")
+	url   = flag.String("url", "", "Mattermost Server address")
+	token = flag.String("token", "", "Nagios plugin token")
+)
+
 func main() {
-	var (
-		nagiosCfgDir = flag.String("dir", "/usr/local/nagios/etc/", "Nagios configuration files directory")
-		address      = flag.String("address", "", "Mattermost Server address")
-		token        = flag.String("token", "", "Nagios plugin token")
-	)
 	flag.Parse()
 
-	baseDir := *nagiosCfgDir
+	baseDir := *dir
 
 	if !filepath.IsAbs(baseDir) {
 		log.Fatal("dir argument must be an absolute path, like /usr/local/nagios/etc/")
@@ -30,7 +31,7 @@ func main() {
 		log.Fatalf("GetAllInDirectory: %v", err)
 	}
 
-	differential, err := watcher.NewDifferential([]string{".swp"}, files, http.DefaultClient, *address, *token)
+	differential, err := watcher.NewDifferential([]string{".swp"}, files, http.DefaultClient, *url, *token)
 	if err != nil {
 		log.Fatalf("NewDifferential: %v", err)
 	}

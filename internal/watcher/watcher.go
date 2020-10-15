@@ -2,9 +2,10 @@ package watcher
 
 import (
 	"bytes"
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -35,7 +36,7 @@ func GetAllInDirectory(dir string) ([]string, []string, error) {
 	}
 
 	if err := filepath.Walk(dir, walkFn); err != nil {
-		return nil, nil, fmt.Errorf("Walk: %w", err)
+		return nil, nil, fmt.Errorf("filepath.Walk: %w", err)
 	}
 
 	return files, directories, nil
@@ -51,16 +52,15 @@ func WatchDirectories(
 	directories []string,
 	provider WatchFuncProvider,
 	done <-chan struct{}) error {
-
 	w, err := fsnotify.NewWatcher()
 	if err != nil {
-		return fmt.Errorf("NewWatcher: %w", err)
+		return fmt.Errorf("fsnotify.NewWatcher: %w", err)
 	}
 	defer w.Close()
 
 	for _, d := range directories {
 		if err := w.Add(d); err != nil {
-			return fmt.Errorf("Add: %w", err)
+			return fmt.Errorf("w.Add: %w", err)
 		}
 	}
 
@@ -104,6 +104,8 @@ type Change struct {
 	Diff string
 }
 
+const TokenHeader = "X-Nagios-Plugin-Token"
+
 func checkStatusCode2xx(statusCode int) bool {
 	return statusCode >= http.StatusOK && statusCode < http.StatusMultipleChoices
 }
@@ -116,17 +118,25 @@ func (d Differential) sendDiff(path string, diff string) error {
 
 	b, err := json.Marshal(change)
 	if err != nil {
-		return fmt.Errorf("Encode: %w", err)
+		return fmt.Errorf("json.Marshal: %w", err)
 	}
 
 	req, err := http.NewRequest(http.MethodPost, d.url, bytes.NewReader(b))
 	if err != nil {
-		return fmt.Errorf("NewRequest: %w", err)
+		return fmt.Errorf("http.NewRequest: %w", err)
 	}
+	req.Header.Set("Content-Type", http.DetectContentType(b))
+	req.Header.Set(TokenHeader, d.token)
 
 	res, err := d.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("Do: %w", err)
+		return fmt.Errorf("d.client.Do: %w", err)
+	}
+
+	defer res.Body.Close()
+
+	if _, err := io.Copy(ioutil.Discard, res.Body); err != nil {
+		return fmt.Errorf("io.Copy: %w", err)
 	}
 
 	if c := res.StatusCode; !checkStatusCode2xx(c) {
@@ -143,10 +153,10 @@ func (d Differential) WatchFn(path string) error {
 
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
-		return fmt.Errorf("ReadFile: %w", err)
+		return fmt.Errorf("ioutil.ReadFile: %w", err)
 	}
 
-	checksum := md5.Sum(contents)
+	checksum := md5.Sum(contents) //nolint:gosec
 
 	if checksum == d.previousChecksum[path] {
 		return nil
@@ -158,7 +168,7 @@ func (d Differential) WatchFn(path string) error {
 		return fmt.Errorf("sendDiff: %w", err)
 	}
 
-	log.Printf("Sent the diff (length = %d)", len(diff))
+	log.Printf("Sent the diff (size = %d)", len(diff))
 
 	d.previousChecksum[path] = checksum
 	d.previousContents[path] = contents
@@ -181,16 +191,15 @@ func NewDifferential(
 	ignoredExtensions, initialFilePaths []string,
 	httpClient *http.Client,
 	url, token string) (Differential, error) {
-
 	previousChecksum := make(map[string][16]byte)
 	previousContents := make(map[string][]byte)
 
 	for _, p := range initialFilePaths {
 		b, err := ioutil.ReadFile(p)
 		if err != nil {
-			return Differential{}, fmt.Errorf("ReadFile: %w", err)
+			return Differential{}, fmt.Errorf("ioutil.ReadFile: %w", err)
 		}
-		previousChecksum[p] = md5.Sum(b)
+		previousChecksum[p] = md5.Sum(b) //nolint:gosec
 		previousContents[p] = b
 	}
 

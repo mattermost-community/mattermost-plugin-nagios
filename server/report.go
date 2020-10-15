@@ -349,6 +349,7 @@ func (p *Plugin) addMonitoringReport(channelID string, stop <-chan bool) {
 		if err != nil {
 			p.API.LogError("getReportFrequency", logErrorKey, err)
 		}
+		p.API.LogInfo(fmt.Sprintf("d=%v", d))
 		select {
 		case <-stop:
 			return
@@ -358,36 +359,4 @@ func (p *Plugin) addMonitoringReport(channelID string, stop <-chan bool) {
 			}
 		}
 	}
-}
-
-func (p *Plugin) subscribe(channelID string, parameters []string) string {
-	if len(parameters) > 0 {
-		return "subscribe does not take any additional parameters."
-	}
-
-	stop := make(chan bool, 1)
-
-	go p.addMonitoringReport(channelID, stop)
-
-	p.subscriptionStop = stop
-
-	return "Subscribed successfully."
-}
-
-func subscribe(p *Plugin, channelID string, parameters []string) string {
-	return p.subscribe(channelID, parameters)
-}
-
-func (p *Plugin) unsubscribe(parameters []string) string {
-	if len(parameters) > 0 {
-		return "unsubscribe does not take any additional parameters."
-	}
-
-	p.subscriptionStop <- true
-
-	return "Unsubscribed successfully."
-}
-
-func unsubscribe(p *Plugin, channelID string, parameters []string) string {
-	return p.unsubscribe(parameters)
 }

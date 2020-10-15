@@ -18,12 +18,10 @@ type commandHandlerFunc func(p *Plugin, channelID string, parameters []string) s
 const (
 	logErrorKey = "error"
 
-	settingLogsLimitInvalid      = "Invalid argument - logs limit must be a positive integer."
 	settingLogsLimitUnsuccessful = "Setting logs limit unsuccessful."
 	logsLimitKey                 = "logs-limit"
 	defaultLogsLimit             = 50
 
-	settingLogsStartTimeInvalid      = "Invalid argument - start time must be a positive integer."
 	settingLogsStartTimeUnsuccessful = "Setting logs start time unsuccessful."
 	logsStartTimeKey                 = "logs-start-time"
 	defaultLogsStartTime             = 86400 // get logs from one day
@@ -31,10 +29,15 @@ const (
 	gettingLogsUnsuccessful = "Getting logs unsuccessful"
 	resultTypeTextSuccess   = "Success"
 
-	settingReportFrequencyInvalid      = "Invalid argument - report frequency must be a positive integer."
 	settingReportFrequencyUnsuccessful = "Setting report frequency unsuccessful."
 	reportFrequencyKey                 = "report-frequency"
-	defaultReportFrequency             = 10 * time.Minute
+	defaultReportFrequency             = 10
+
+	settingReportChannelUnsuccessful = "Setting system monitoring report channel unsuccessful."
+	reportChannelKey                 = "report-channel"
+
+	settingChangesChannelUnsuccessful = "Setting configuration changes channel unsuccessful."
+	changesChannelKey                 = "changes-channel"
 )
 
 func getLogsLimit(api plugin.API) (int, error) {
@@ -64,7 +67,7 @@ func (p *Plugin) setLogsLimit(parameters []string) string {
 	}
 
 	if i <= 0 {
-		return settingLogsLimitInvalid
+		return "Invalid argument - logs limit must be a positive integer."
 	}
 
 	b, err := json.Marshal(i)
@@ -112,7 +115,7 @@ func (p *Plugin) setLogsStartTime(parameters []string) string {
 	}
 
 	if i <= 0 {
-		return settingLogsStartTimeInvalid
+		return "Invalid argument - start time must be a positive integer."
 	}
 
 	b, err := json.Marshal(i)
@@ -351,7 +354,7 @@ func (p *Plugin) setReportFrequency(parameters []string) string {
 	}
 
 	if i <= 0 {
-		return settingReportFrequencyInvalid
+		return "Invalid argument - report frequency must be a positive integer."
 	}
 
 	b, err := json.Marshal(i)
@@ -370,4 +373,130 @@ func (p *Plugin) setReportFrequency(parameters []string) string {
 
 func setReportFrequency(p *Plugin, channelID string, parameters []string) string {
 	return p.setReportFrequency(parameters)
+}
+
+// func getReportChannel(api plugin.API) (string, error) {
+// 	b, err := api.KVGet(reportChannelKey)
+// 	if err != nil {
+// 		return "", fmt.Errorf("api.KVGet: %w", err)
+// 	}
+//
+// 	if b == nil {
+// 		return "", nil
+// 	}
+//
+// 	var channel string
+//
+// 	if err := json.Unmarshal(b, &channel); err != nil {
+// 		return "", fmt.Errorf("json.Unmarshal: %w", err)
+// 	}
+//
+// 	return channel, nil
+// }
+
+func setReportChannel(api plugin.API, channelID string) string {
+	b, err := json.Marshal(channelID)
+	if err != nil {
+		api.LogError("Marshal", logErrorKey, err)
+		return settingReportChannelUnsuccessful
+	}
+
+	if err := api.KVSet(reportChannelKey, b); err != nil {
+		api.LogError("KVSet", logErrorKey, err)
+		return settingReportChannelUnsuccessful
+	}
+
+	return "Subscribed to system monitoring report successfully."
+}
+
+func getChangesChannel(api plugin.API) (string, error) {
+	b, err := api.KVGet(changesChannelKey)
+	if err != nil {
+		return "", fmt.Errorf("api.KVGet: %w", err)
+	}
+
+	if b == nil {
+		return "", nil
+	}
+
+	var channel string
+
+	if err := json.Unmarshal(b, &channel); err != nil {
+		return "", fmt.Errorf("json.Unmarshal: %w", err)
+	}
+
+	return channel, nil
+}
+
+func setChangesChannel(api plugin.API, channelID string) string {
+	b, err := json.Marshal(channelID)
+	if err != nil {
+		api.LogError("Marshal", logErrorKey, err)
+		return settingChangesChannelUnsuccessful
+	}
+
+	if err := api.KVSet(changesChannelKey, b); err != nil {
+		api.LogError("KVSet", logErrorKey, err)
+		return settingChangesChannelUnsuccessful
+	}
+
+	return "Subscribed to configuration changes successfully."
+}
+
+func (p *Plugin) subscribe(channelID string, parameters []string) string {
+	if len(parameters) != 1 {
+		return "You must supply exactly one parameter (report|configuration-changes)."
+	}
+
+	switch parameters[0] {
+	case "report":
+		// TODO(amwolff): rewrite it to support HA (should be quick).
+		stop := make(chan bool, 1)
+
+		go p.addMonitoringReport(channelID, stop)
+
+		p.subscriptionStop = stop
+
+		return setReportChannel(p.API, channelID)
+	case "configuration-changes":
+		return setChangesChannel(p.API, channelID)
+	default:
+		return unknownParameterMessage(parameters[0])
+	}
+}
+
+func subscribe(p *Plugin, channelID string, parameters []string) string {
+	return p.subscribe(channelID, parameters)
+}
+
+func (p *Plugin) unsubscribe(parameters []string) string {
+	if len(parameters) != 1 {
+		return "You must supply exactly one parameter (report|configuration-changes)."
+	}
+
+	const unsubscribingUnsuccessful = "Unsubscribing unsuccessful."
+
+	switch parameters[0] {
+	case "report":
+		// TODO(amwolff): rewrite it to support HA (should be quick).
+		p.subscriptionStop <- true
+
+		if err := p.API.KVDelete(reportChannelKey); err != nil {
+			p.API.LogError("KVDelete", logErrorKey, err)
+			return unsubscribingUnsuccessful
+		}
+	case "configuration-changes":
+		if err := p.API.KVDelete(changesChannelKey); err != nil {
+			p.API.LogError("KVDelete", logErrorKey, err)
+			return unsubscribingUnsuccessful
+		}
+	default:
+		return unknownParameterMessage(parameters[0])
+	}
+
+	return "Unsubscribed successfully."
+}
+
+func unsubscribe(p *Plugin, channelID string, parameters []string) string {
+	return p.unsubscribe(parameters)
 }
