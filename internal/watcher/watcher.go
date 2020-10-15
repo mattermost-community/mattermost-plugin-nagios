@@ -89,13 +89,14 @@ func WatchDirectories(
 	}
 }
 
-// Differential implements WatchFuncProvider. Do not use zero-value. Use
-// NewDifferential instead.
+// Differential implements WatchFuncProvider. Use NewDifferential to initialize
+// Differential.
 type Differential struct {
-	client           *http.Client
-	url, token       string
-	previousChecksum map[string][16]byte
-	previousContents map[string][]byte
+	ignoredExtensions map[string]struct{}
+	previousChecksum  map[string][16]byte
+	previousContents  map[string][]byte
+	client            *http.Client
+	url, token        string
 }
 
 type Change struct {
@@ -113,13 +114,12 @@ func (d Differential) sendDiff(path string, diff string) error {
 		Diff: diff,
 	}
 
-	var buf *bytes.Buffer
-
-	if err := json.NewEncoder(buf).Encode(change); err != nil {
+	b, err := json.Marshal(change)
+	if err != nil {
 		return fmt.Errorf("Encode: %w", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, d.url, buf)
+	req, err := http.NewRequest(http.MethodPost, d.url, bytes.NewReader(b))
 	if err != nil {
 		return fmt.Errorf("NewRequest: %w", err)
 	}
@@ -137,20 +137,22 @@ func (d Differential) sendDiff(path string, diff string) error {
 }
 
 func (d Differential) WatchFn(path string) error {
-	b, err := ioutil.ReadFile(path)
+	if _, ok := d.ignoredExtensions[filepath.Ext(path)]; ok {
+		return nil
+	}
+
+	contents, err := ioutil.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("ReadFile: %w", err)
 	}
 
-	s := md5.Sum(b)
+	checksum := md5.Sum(contents)
 
-	if prev, ok := d.previousChecksum[path]; ok {
-		if prev == s {
-			return nil
-		}
+	if checksum == d.previousChecksum[path] {
+		return nil
 	}
 
-	diff := cmp.Diff(b, d.previousContents[path])
+	diff := cmp.Diff(string(d.previousContents[path]), string(contents))
 
 	if err := d.sendDiff(path, diff); err != nil {
 		return fmt.Errorf("sendDiff: %w", err)
@@ -158,17 +160,27 @@ func (d Differential) WatchFn(path string) error {
 
 	log.Printf("Sent the diff (length = %d)", len(diff))
 
-	d.previousChecksum[path] = s
-	d.previousContents[path] = b
+	d.previousChecksum[path] = checksum
+	d.previousContents[path] = contents
 
 	return nil
 }
 
+func getIgnoredExtensions(extensions []string) map[string]struct{} {
+	lookup := make(map[string]struct{})
+
+	for _, e := range extensions {
+		lookup[e] = struct{}{}
+	}
+
+	return lookup
+}
+
 // NewDifferential returns initialized Differential.
 func NewDifferential(
+	ignoredExtensions, initialFilePaths []string,
 	httpClient *http.Client,
-	url, token string,
-	initialFilePaths []string) (Differential, error) {
+	url, token string) (Differential, error) {
 
 	previousChecksum := make(map[string][16]byte)
 	previousContents := make(map[string][]byte)
@@ -183,10 +195,11 @@ func NewDifferential(
 	}
 
 	return Differential{
-		client:           httpClient,
-		url:              url,
-		token:            token,
-		previousChecksum: previousChecksum,
-		previousContents: previousContents,
+		ignoredExtensions: getIgnoredExtensions(ignoredExtensions),
+		previousChecksum:  previousChecksum,
+		previousContents:  previousContents,
+		client:            httpClient,
+		url:               url,
+		token:             token,
 	}, nil
 }

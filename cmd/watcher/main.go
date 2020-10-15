@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -11,7 +12,11 @@ import (
 )
 
 func main() {
-	nagiosCfgDir := flag.String("dir", "/usr/local/nagios/etc/", "Nagios configuration files directory")
+	var (
+		nagiosCfgDir = flag.String("dir", "/usr/local/nagios/etc/", "Nagios configuration files directory")
+		address      = flag.String("address", "", "Mattermost Server address")
+		token        = flag.String("token", "", "Nagios plugin token")
+	)
 	flag.Parse()
 
 	baseDir := *nagiosCfgDir
@@ -22,10 +27,13 @@ func main() {
 
 	files, directories, err := watcher.GetAllInDirectory(baseDir)
 	if err != nil {
-		log.Panic(err)
+		log.Fatalf("GetAllInDirectory: %v", err)
 	}
 
-	diffWatch := watcher.NewDifferential()
+	differential, err := watcher.NewDifferential([]string{".swp"}, files, http.DefaultClient, *address, *token)
+	if err != nil {
+		log.Fatalf("NewDifferential: %v", err)
+	}
 
 	done := make(chan struct{})
 
@@ -40,7 +48,7 @@ func main() {
 		log.Println("Bye")
 	}()
 
-	if err := watcher.WatchDirectories(directories, diffWatch, done); err != nil {
+	if err := watcher.WatchDirectories(directories, differential, done); err != nil {
 		log.Panic(err)
 	}
 }
