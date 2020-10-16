@@ -18,7 +18,10 @@ func getAutoCompleteDesc(m map[string]commandHandlerFunc) string {
 		if i > 0 {
 			b.WriteString(", ")
 		}
+
 		b.WriteString(k)
+
+		i++
 	}
 
 	return b.String()

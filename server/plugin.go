@@ -29,8 +29,6 @@ type Plugin struct {
 	botUserID string
 
 	commandHandlers map[string]commandHandlerFunc
-
-	subscriptionStop chan<- bool
 }
 
 func (p *Plugin) setDefaultKV(key string, value interface{}) error {
@@ -95,6 +93,8 @@ func (p *Plugin) OnActivate() error {
 	if err := p.storeDefaultKV(); err != nil {
 		return fmt.Errorf("p.storeDefaultKV: %w", err)
 	}
+
+	go p.monitoringReportLoop()
 
 	return nil
 }

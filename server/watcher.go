@@ -7,9 +7,9 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/mattermost/mattermost-plugin-starter-template/internal/watcher"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
+	"github.com/ulumuri/mattermost-plugin-nagios/internal/watcher"
 )
 
 func formatChange(change watcher.Change) string {
@@ -18,9 +18,7 @@ func formatChange(change watcher.Change) string {
 	b.WriteString(fmt.Sprintf("**%s** has been modified", change.Name))
 	b.WriteString(" (-previous +actual):\n\n")
 
-	b.WriteString("```")
-
-	b.WriteRune('\n')
+	b.WriteString("```diff\n")
 
 	if utf8.RuneCountInString(change.Diff) > 16077 {
 		b.WriteString("File has been changed, but the diff is too long.")

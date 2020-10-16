@@ -104,7 +104,7 @@ type Change struct {
 	Diff string
 }
 
-const TokenHeader = "X-Nagios-Plugin-Token"
+const TokenHeader = "X-Nagios-Plugin-Token" //nolint:gosec
 
 func checkStatusCode2xx(statusCode int) bool {
 	return statusCode >= http.StatusOK && statusCode < http.StatusMultipleChoices

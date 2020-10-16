@@ -31,7 +31,7 @@ const (
 
 	settingReportFrequencyUnsuccessful = "Setting report frequency unsuccessful."
 	reportFrequencyKey                 = "report-frequency"
-	defaultReportFrequency             = 10
+	defaultReportFrequency             = 1
 
 	settingReportChannelUnsuccessful = "Setting system monitoring report channel unsuccessful."
 	reportChannelKey                 = "report-channel"
@@ -375,24 +375,24 @@ func setReportFrequency(p *Plugin, channelID string, parameters []string) string
 	return p.setReportFrequency(parameters)
 }
 
-// func getReportChannel(api plugin.API) (string, error) {
-// 	b, err := api.KVGet(reportChannelKey)
-// 	if err != nil {
-// 		return "", fmt.Errorf("api.KVGet: %w", err)
-// 	}
-//
-// 	if b == nil {
-// 		return "", nil
-// 	}
-//
-// 	var channel string
-//
-// 	if err := json.Unmarshal(b, &channel); err != nil {
-// 		return "", fmt.Errorf("json.Unmarshal: %w", err)
-// 	}
-//
-// 	return channel, nil
-// }
+func getReportChannel(api plugin.API) (string, error) {
+	b, err := api.KVGet(reportChannelKey)
+	if err != nil {
+		return "", fmt.Errorf("api.KVGet: %w", err)
+	}
+
+	if b == nil {
+		return "", nil
+	}
+
+	var channel string
+
+	if err := json.Unmarshal(b, &channel); err != nil {
+		return "", fmt.Errorf("json.Unmarshal: %w", err)
+	}
+
+	return channel, nil
+}
 
 func setReportChannel(api plugin.API, channelID string) string {
 	b, err := json.Marshal(channelID)
@@ -450,13 +450,6 @@ func (p *Plugin) subscribe(channelID string, parameters []string) string {
 
 	switch parameters[0] {
 	case "report":
-		// TODO(amwolff): rewrite it to support HA (should be quick).
-		stop := make(chan bool, 1)
-
-		go p.addMonitoringReport(channelID, stop)
-
-		p.subscriptionStop = stop
-
 		return setReportChannel(p.API, channelID)
 	case "configuration-changes":
 		return setChangesChannel(p.API, channelID)
@@ -478,9 +471,6 @@ func (p *Plugin) unsubscribe(parameters []string) string {
 
 	switch parameters[0] {
 	case "report":
-		// TODO(amwolff): rewrite it to support HA (should be quick).
-		p.subscriptionStop <- true
-
 		if err := p.API.KVDelete(reportChannelKey); err != nil {
 			p.API.LogError("KVDelete", logErrorKey, err)
 			return unsubscribingUnsuccessful

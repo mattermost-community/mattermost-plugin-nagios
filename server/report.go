@@ -343,20 +343,48 @@ func (p *Plugin) sendMonitoringReport(channelID string) error {
 	return nil
 }
 
-func (p *Plugin) addMonitoringReport(channelID string, stop <-chan bool) {
+const reportLockKey = "report-lock"
+
+var reportLock = []byte{0b10, 0b1, 0b11, 0b111}
+
+func (p *Plugin) monitoringReportLoop() {
 	for {
+		time.Sleep(time.Minute)
+
 		d, err := getReportFrequency(p.API)
 		if err != nil {
 			p.API.LogError("getReportFrequency", logErrorKey, err)
+			continue
 		}
-		p.API.LogInfo(fmt.Sprintf("d=%v", d))
-		select {
-		case <-stop:
-			return
-		case <-time.NewTimer(d).C:
-			if err := p.sendMonitoringReport(channelID); err != nil {
-				p.API.LogError("sendMonitoringReport", logErrorKey, err)
+
+		opts := model.PluginKVSetOptions{
+			Atomic:          true,
+			OldValue:        nil,
+			ExpireInSeconds: int64(d.Seconds()),
+		}
+
+		ok, appErr := p.API.KVSetWithOptions(reportLockKey, reportLock, opts)
+		if !ok {
+			if appErr != nil {
+				p.API.LogError("KVSetWithOptions", logErrorKey, err)
 			}
+			continue
+		}
+
+		p.API.LogDebug("Acquired lock", "id", p.API.GetDiagnosticId())
+
+		c, err := getReportChannel(p.API)
+		if err != nil {
+			p.API.LogError("getReportChannel", logErrorKey, err)
+			continue
+		}
+
+		if c == "" { // fast path, there is no subscription.
+			continue
+		}
+
+		if err := p.sendMonitoringReport(c); err != nil {
+			p.API.LogError("sendMonitoringReport", logErrorKey, err)
 		}
 	}
 }

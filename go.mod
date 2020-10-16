@@ -1,6 +1,6 @@
-module github.com/mattermost/mattermost-plugin-starter-template
+module github.com/ulumuri/mattermost-plugin-nagios
 
-go 1.12
+go 1.13
 
 require (
 	github.com/fsnotify/fsnotify v1.4.9
