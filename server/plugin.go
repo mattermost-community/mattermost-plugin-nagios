@@ -45,9 +45,9 @@ func (p *Plugin) setDefaultKV(key string, value interface{}) error {
 }
 
 var defaultKVStore = map[string]interface{}{
-	logsLimitKey:       defaultLogsLimit,
-	logsStartTimeKey:   defaultLogsStartTime,
-	reportFrequencyKey: defaultReportFrequency,
+	setLogsLimitKey:       defaultLogsLimit,
+	setLogsStartTimeKey:   defaultLogsStartTime,
+	setReportFrequencyKey: defaultReportFrequency,
 }
 
 func (p *Plugin) storeDefaultKV() error {

@@ -35,9 +35,9 @@ This plugin allows you to
 
 - [x] get logs from specific systems without leaving the Mattermost
     - get alerts and notifications instantly delivered, resembling the `showlog.cgi` UI
-- [x] receive the system monitoring reports on a subscribed channel
+- [x] receive system monitoring reports on a subscribed channel
     - be frequently informed which hosts and/or services have an abnormal state
-- [ ] (in progress) receive notifications about changes to the configuration on a subscribed channel
+- [x] receive notifications about changes to the configuration on a subscribed channel
     - anytime a change has been made to Nagios configuration, receive a diff between the old and the new version
 
 Ultimately, this will make you or your team more productive and make the experience with Nagios smoother.
@@ -50,7 +50,7 @@ This guide is for Mattermost System Admins setting up the Nagios plugin and Matt
 
 If you are a Nagios admin/user and think there is something this plugin lacks or something that it does could be done the other way around, let us know!
 We are trying to develop this plugin based on users' needs.
-If there is a certain feature you or your team needs, open up an issue and explain your needs.
+If there is a certain feature you or your team needs, open up an issue, and explain your needs.
 We will be happy to help.
 
 ## Installing the plugin
@@ -98,8 +98,8 @@ Interaction with the plugin involves using the slash commands.
         - `[host|service <host name|service description>]`
     - `set-logs-limit <count>`
     - `set-logs-start-time <seconds>`
-    - `subscribe`
-    - `unsubscribe`
+    - `subscribe <report|configuration-changes>`
+    - `unsubscribe <report|configuration-changes>`
     - `set-report-frequency <minutes>`
 
 ### Slash commands documentation
@@ -140,7 +140,7 @@ Example: `/nagios get-logs alerts service Swap-Is-Low`
 
 This action allows you to limit the number of logs `get-logs` fetches.
 
-Example: `/nagios set-logs-limit 100`
+Example: `/nagios set-logs-limit 10`
 
 ##### set-logs-start-time
 
@@ -152,27 +152,27 @@ Example: `/nagios set-logs-start-time 3600`
 
 ##### subscribe
 
-`subscribe`
+`subscribe <report|configuration-changes>`
 
-This action allows you to subscribe to the system monitoring reports on the current channel.
+This action allows you to subscribe to system monitoring reports or configuration changes on the current channel.
 
-Example: `/nagios subscribe`
+Example: `/nagios subscribe report`
 
 ##### unsubscribe
 
-`unsubscribe`
+`unsubscribe <report|configuration-changes>`
 
-This action allows you to unsubscribe from the system monitoring reports.
+This action allows you to unsubscribe from system monitoring reports or configuration changes on the current channel.
 
-Example: `/nagios unsubscribe`
+Example: `/nagios unsubscribe configuration-changes`
 
 ##### set-report-frequency
 
 `set-report-frequency <minutes>`
 
-This action allows you to set the frequency of the system monitoring reports.
+This action allows you to set the frequency of system monitoring reports.
 
-Example: `/nagios set-report-frequency 15`
+Example: `/nagios set-report-frequency 60`
 
 ## Contributing
 

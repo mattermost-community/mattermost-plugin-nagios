@@ -7,13 +7,13 @@ import (
 func main() {
 	plugin.ClientMain(&Plugin{
 		commandHandlers: map[string]commandHandlerFunc{
-			"help":                 nil,
-			"set-logs-limit":       setLogsLimit,
-			"set-logs-start-time":  setLogsStartTime,
-			"get-logs":             getLogs,
-			"set-report-frequency": setReportFrequency,
-			"subscribe":            subscribe,
-			"unsubscribe":          unsubscribe,
+			setLogsLimitKey:       setLogsLimit,
+			setLogsStartTimeKey:   setLogsStartTime,
+			getLogsKey:            getLogs,
+			setReportFrequencyKey: setReportFrequency,
+			subscribeKey:          subscribe,
+			unsubscribeKey:        unsubscribe,
+			// TODO: add `help`?
 		},
 	})
 }

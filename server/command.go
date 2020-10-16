@@ -27,16 +27,109 @@ func getAutoCompleteDesc(m map[string]commandHandlerFunc) string {
 	return b.String()
 }
 
+func getHint(before, after rune, keys ...string) string {
+	var b strings.Builder
+
+	b.WriteRune(before)
+
+	for i, k := range keys {
+		if i > 0 {
+			b.WriteRune('|')
+		}
+		b.WriteString(k)
+	}
+
+	b.WriteRune(after)
+
+	return b.String()
+}
+
+func getAlertsAutocompleteData() *model.AutocompleteData {
+	alerts := model.NewAutocompleteData(
+		alertsKey,
+		getHint('[', ']', hostKey, serviceKey),
+		"Allows you to get alerts.")
+
+	alerts.AddCommand(
+		model.NewAutocompleteData(
+			hostKey,
+			"<host>",
+			"Allows you to get alerts from a specific host."))
+	alerts.AddCommand(
+		model.NewAutocompleteData(
+			serviceKey,
+			"<service>",
+			"Allows you to get alerts from a specific service."))
+
+	return alerts
+}
+
+func getNotificationsAutocompleteData() *model.AutocompleteData {
+	notifications := model.NewAutocompleteData(
+		notificationsKey,
+		getHint('[', ']', hostKey, serviceKey),
+		"Allows you to get notifications.")
+
+	notifications.AddCommand(
+		model.NewAutocompleteData(
+			hostKey,
+			"<host>",
+			"Allows you to get notifications from a specific host."))
+	notifications.AddCommand(
+		model.NewAutocompleteData(
+			serviceKey,
+			"<service>",
+			"Allows you to get notifications from a specific service."))
+
+	return notifications
+}
+
 func getLogsAutocompleteData() *model.AutocompleteData {
-	getLogs := model.NewAutocompleteData("get-logs", "[alerts|notifications]", "Get logs of specific type")
+	getLogs := model.NewAutocompleteData(
+		getLogsKey,
+		getHint('<', '>', alertsKey, notificationsKey),
+		"Allows you to get alerts or notifications.")
 
-	alerts := model.NewAutocompleteData("alerts", "", "Get alerts")
-	getLogs.AddCommand(alerts)
-
-	notifications := model.NewAutocompleteData("notifications", "", "Get notifications")
-	getLogs.AddCommand(notifications)
+	getLogs.AddCommand(getAlertsAutocompleteData())
+	getLogs.AddCommand(getNotificationsAutocompleteData())
 
 	return getLogs
+}
+
+func subscribeAutocompleteData() *model.AutocompleteData {
+	subscribe := model.NewAutocompleteData(
+		subscribeKey,
+		getHint('<', '>', reportKey, configurationChangesKey),
+		"Allows you to subscribe to system monitoring reports or configuration changes on the current channel.")
+
+	subscribe.AddCommand(model.NewAutocompleteData(
+		reportKey,
+		"",
+		"Allows you to subscribe to system monitoring reports on the current channel."))
+	subscribe.AddCommand(model.NewAutocompleteData(
+		configurationChangesKey,
+		"",
+		"Allows you to subscribe to configuration changes on the current channel."))
+
+	return subscribe
+}
+
+func unsubscribeAutocompleteData() *model.AutocompleteData {
+	unsubscribe := model.NewAutocompleteData(
+		unsubscribeKey,
+		getHint('<', '>', reportKey, configurationChangesKey),
+		"Allows you to unsubscribe from system monitoring reports or configuration changes on the current channel.")
+
+	unsubscribe.AddCommand(model.NewAutocompleteData(
+		reportKey,
+		"",
+		"Allows you to unsubscribe from system monitoring reports on the current channel."))
+	unsubscribe.AddCommand(model.NewAutocompleteData(
+		configurationChangesKey,
+		"",
+		"Allows you to unsubscribe from configuration changes on the current channel."))
+
+	return unsubscribe
 }
 
 func getAutocompleteData(desc string) *model.AutocompleteData {
@@ -46,24 +139,31 @@ func getAutocompleteData(desc string) *model.AutocompleteData {
 	nagios.AddCommand(getLogsAutocompleteData())
 
 	// Auto-complete for set-logs-limit command.
-	setLogsLimit := model.NewAutocompleteData("set-logs-limit", "[positive integer]", "Set maximum number of logs to display")
-	nagios.AddCommand(setLogsLimit)
+	nagios.AddCommand(
+		model.NewAutocompleteData(
+			setLogsLimitKey,
+			"[positive integer]",
+			"Allows you to limit the number of logs get-logs fetches."))
 
 	// Auto-complete for set-logs-start-time command.
-	setLogsStartTime := model.NewAutocompleteData("set-logs-start-time", "[seconds]", "Set number of seconds to get logs from")
-	nagios.AddCommand(setLogsStartTime)
+	nagios.AddCommand(
+		model.NewAutocompleteData(
+			setLogsStartTimeKey,
+			"[seconds]",
+			"Allows you to specify the age of the oldest log get-logs fetches."))
 
 	// Auto-complete for set-report-frequency command.
-	setReportFrequency := model.NewAutocompleteData("set-report-frequency", "[minutes]", "Set frequency of system monitoring reports")
-	nagios.AddCommand(setReportFrequency)
+	nagios.AddCommand(
+		model.NewAutocompleteData(
+			setReportFrequencyKey,
+			"[minutes]",
+			"Allows you to set the frequency of system monitoring reports."))
 
 	// Auto-complete for subscribe command.
-	subscribe := model.NewAutocompleteData("subscribe", "", "Subscribe to system monitoring reports")
-	nagios.AddCommand(subscribe)
+	nagios.AddCommand(subscribeAutocompleteData())
 
 	// Auto-complete for unsubscribe command.
-	unsubscribe := model.NewAutocompleteData("unsubscribe", "", "Unsubscribe from system monitoring reports")
-	nagios.AddCommand(unsubscribe)
+	nagios.AddCommand(unsubscribeAutocompleteData())
 
 	return nagios
 }
@@ -83,7 +183,9 @@ func (p *Plugin) getCommand() *model.Command {
 	}
 }
 
-func parseCommandArgs(args *model.CommandArgs) (command, action string, parameters []string) {
+func parseCommandArgs(args *model.CommandArgs) (
+	command, action string,
+	parameters []string) {
 	fields := strings.Fields(args.Command)
 
 	if len(fields) > 0 {
@@ -98,16 +200,21 @@ func parseCommandArgs(args *model.CommandArgs) (command, action string, paramete
 	return command, action, parameters
 }
 
-func (p *Plugin) getCommandResponse(args *model.CommandArgs, text string) *model.CommandResponse {
+func (p *Plugin) getCommandResponse(
+	args *model.CommandArgs,
+	text string) *model.CommandResponse {
 	p.API.SendEphemeralPost(args.UserId, &model.Post{
 		UserId:    p.botUserID,
 		ChannelId: args.ChannelId,
 		Message:   text,
 	})
+
 	return &model.CommandResponse{}
 }
 
-func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (
+	*model.CommandResponse,
+	*model.AppError) {
 	command, action, parameters := parseCommandArgs(args)
 
 	if command != "/nagios" {

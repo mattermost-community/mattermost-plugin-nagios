@@ -15,33 +15,15 @@ type commandHandlerFunc func(p *Plugin, channelID string, parameters []string) s
 
 // TODO(DanielSz50): implement get-current-limits command
 
+const logErrorKey = "error"
+
 const (
-	logErrorKey = "error"
-
-	settingLogsLimitUnsuccessful = "Setting logs limit unsuccessful."
-	logsLimitKey                 = "logs-limit"
-	defaultLogsLimit             = 50
-
-	settingLogsStartTimeUnsuccessful = "Setting logs start time unsuccessful."
-	logsStartTimeKey                 = "logs-start-time"
-	defaultLogsStartTime             = 86400 // get logs from one day
-
-	gettingLogsUnsuccessful = "Getting logs unsuccessful"
-	resultTypeTextSuccess   = "Success"
-
-	settingReportFrequencyUnsuccessful = "Setting report frequency unsuccessful."
-	reportFrequencyKey                 = "report-frequency"
-	defaultReportFrequency             = 1
-
-	settingReportChannelUnsuccessful = "Setting system monitoring report channel unsuccessful."
-	reportChannelKey                 = "report-channel"
-
-	settingChangesChannelUnsuccessful = "Setting configuration changes channel unsuccessful."
-	changesChannelKey                 = "changes-channel"
+	setLogsLimitKey  = "set-logs-limit"
+	defaultLogsLimit = 50
 )
 
 func getLogsLimit(api plugin.API) (int, error) {
-	b, err := api.KVGet(logsLimitKey)
+	b, err := api.KVGet(setLogsLimitKey)
 	if err != nil {
 		return 0, fmt.Errorf("api.KVGet: %w", err)
 	}
@@ -60,6 +42,8 @@ func (p *Plugin) setLogsLimit(parameters []string) string {
 		return "You must supply exactly one parameter (integer value)."
 	}
 
+	const settingLogsLimitUnsuccessful = "Setting logs limit unsuccessful."
+
 	i, err := strconv.Atoi(parameters[0])
 	if err != nil {
 		p.API.LogError("Atoi", logErrorKey, err)
@@ -76,7 +60,7 @@ func (p *Plugin) setLogsLimit(parameters []string) string {
 		return settingLogsLimitUnsuccessful
 	}
 
-	if err := p.API.KVSet(logsLimitKey, b); err != nil {
+	if err := p.API.KVSet(setLogsLimitKey, b); err != nil {
 		p.API.LogError("KVSet", logErrorKey, err)
 		return settingLogsLimitUnsuccessful
 	}
@@ -88,8 +72,13 @@ func setLogsLimit(p *Plugin, channelID string, parameters []string) string {
 	return p.setLogsLimit(parameters)
 }
 
+const (
+	setLogsStartTimeKey  = "set-logs-start-time"
+	defaultLogsStartTime = 86400 // seconds, get logs from one day
+)
+
 func getLogsStartTime(api plugin.API) (time.Duration, error) {
-	b, err := api.KVGet(logsStartTimeKey)
+	b, err := api.KVGet(setLogsStartTimeKey)
 	if err != nil {
 		return 0, fmt.Errorf("api.KVGet: %w", err)
 	}
@@ -108,6 +97,8 @@ func (p *Plugin) setLogsStartTime(parameters []string) string {
 		return "You must supply exactly one parameter (number of seconds)."
 	}
 
+	const settingLogsStartTimeUnsuccessful = "Setting logs start time unsuccessful."
+
 	i, err := strconv.ParseInt(parameters[0], 10, 64)
 	if err != nil {
 		p.API.LogError("ParseInt", logErrorKey, err)
@@ -124,7 +115,7 @@ func (p *Plugin) setLogsStartTime(parameters []string) string {
 		return settingLogsStartTimeUnsuccessful
 	}
 
-	if err := p.API.KVSet(logsStartTimeKey, b); err != nil {
+	if err := p.API.KVSet(setLogsStartTimeKey, b); err != nil {
 		p.API.LogError("KVSet", logErrorKey, err)
 		return settingLogsStartTimeUnsuccessful
 	}
@@ -150,6 +141,16 @@ func formatHostName(name, alt string) string {
 	}
 	return name
 }
+
+const (
+	gettingLogsUnsuccessful = "Getting logs unsuccessful"
+	resultTypeTextSuccess   = "Success"
+	hostKey                 = "host"
+	serviceKey              = "service"
+	alertsKey               = "alerts"
+	notificationsKey        = "notifications"
+	getLogsKey              = "get-logs"
+)
 
 func gettingLogsUnsuccessfulMessage(message string) string {
 	return fmt.Sprintf("%s: %s", gettingLogsUnsuccessful, message)
@@ -239,12 +240,12 @@ func getLogsSpecific(parameters []string) (hostName, serviceDescription, message
 	}
 
 	switch parameters[0] {
-	case "host":
+	case hostKey:
 		if len(parameters) < 2 {
 			return "", "", "You must supply host name.", false
 		}
 		return parameters[1], "", "", true
-	case "service":
+	case serviceKey:
 		if len(parameters) < 2 {
 			return "", "", "You must supply service description.", false
 		}
@@ -280,7 +281,7 @@ func (p *Plugin) getLogs(parameters []string) string {
 	then := now.Add(-d)
 
 	switch parameters[0] {
-	case "alerts":
+	case alertsKey:
 		q := nagios.AlertListRequest{
 			GeneralAlertRequest: nagios.GeneralAlertRequest{
 				FormatOptions: nagios.FormatOptions{
@@ -299,7 +300,7 @@ func (p *Plugin) getLogs(parameters []string) string {
 			return gettingLogsUnsuccessful
 		}
 		return formatAlerts(alerts)
-	case "notifications":
+	case notificationsKey:
 		q := nagios.NotificationListRequest{
 			GeneralNotificationRequest: nagios.GeneralNotificationRequest{
 				FormatOptions: nagios.FormatOptions{
@@ -327,8 +328,13 @@ func getLogs(p *Plugin, channelID string, parameters []string) string {
 	return p.getLogs(parameters)
 }
 
+const (
+	setReportFrequencyKey  = "set-report-frequency"
+	defaultReportFrequency = 1 // minutes
+)
+
 func getReportFrequency(api plugin.API) (time.Duration, error) {
-	b, err := api.KVGet(reportFrequencyKey)
+	b, err := api.KVGet(setReportFrequencyKey)
 	if err != nil {
 		return 0, fmt.Errorf("api.KVGet: %w", err)
 	}
@@ -347,6 +353,8 @@ func (p *Plugin) setReportFrequency(parameters []string) string {
 		return "You must supply exactly one parameter (number of minutes)."
 	}
 
+	const settingReportFrequencyUnsuccessful = "Setting report frequency unsuccessful."
+
 	i, err := strconv.Atoi(parameters[0])
 	if err != nil {
 		p.API.LogError("Atoi", logErrorKey, err)
@@ -363,7 +371,7 @@ func (p *Plugin) setReportFrequency(parameters []string) string {
 		return settingReportFrequencyUnsuccessful
 	}
 
-	if err := p.API.KVSet(reportFrequencyKey, b); err != nil {
+	if err := p.API.KVSet(setReportFrequencyKey, b); err != nil {
 		p.API.LogError("KVSet", logErrorKey, err)
 		return settingReportFrequencyUnsuccessful
 	}
@@ -375,8 +383,15 @@ func setReportFrequency(p *Plugin, channelID string, parameters []string) string
 	return p.setReportFrequency(parameters)
 }
 
+const (
+	reportKey               = "report"
+	configurationChangesKey = "configuration-changes"
+	subscribeKey            = "subscribe"
+	unsubscribeKey          = "unsubscribe"
+)
+
 func getReportChannel(api plugin.API) (string, error) {
-	b, err := api.KVGet(reportChannelKey)
+	b, err := api.KVGet(reportKey)
 	if err != nil {
 		return "", fmt.Errorf("api.KVGet: %w", err)
 	}
@@ -395,13 +410,15 @@ func getReportChannel(api plugin.API) (string, error) {
 }
 
 func setReportChannel(api plugin.API, channelID string) string {
+	const settingReportChannelUnsuccessful = "Setting system monitoring report channel unsuccessful."
+
 	b, err := json.Marshal(channelID)
 	if err != nil {
 		api.LogError("Marshal", logErrorKey, err)
 		return settingReportChannelUnsuccessful
 	}
 
-	if err := api.KVSet(reportChannelKey, b); err != nil {
+	if err := api.KVSet(reportKey, b); err != nil {
 		api.LogError("KVSet", logErrorKey, err)
 		return settingReportChannelUnsuccessful
 	}
@@ -410,7 +427,7 @@ func setReportChannel(api plugin.API, channelID string) string {
 }
 
 func getChangesChannel(api plugin.API) (string, error) {
-	b, err := api.KVGet(changesChannelKey)
+	b, err := api.KVGet(configurationChangesKey)
 	if err != nil {
 		return "", fmt.Errorf("api.KVGet: %w", err)
 	}
@@ -429,13 +446,15 @@ func getChangesChannel(api plugin.API) (string, error) {
 }
 
 func setChangesChannel(api plugin.API, channelID string) string {
+	const settingChangesChannelUnsuccessful = "Setting configuration changes channel unsuccessful."
+
 	b, err := json.Marshal(channelID)
 	if err != nil {
 		api.LogError("Marshal", logErrorKey, err)
 		return settingChangesChannelUnsuccessful
 	}
 
-	if err := api.KVSet(changesChannelKey, b); err != nil {
+	if err := api.KVSet(configurationChangesKey, b); err != nil {
 		api.LogError("KVSet", logErrorKey, err)
 		return settingChangesChannelUnsuccessful
 	}
@@ -449,9 +468,9 @@ func (p *Plugin) subscribe(channelID string, parameters []string) string {
 	}
 
 	switch parameters[0] {
-	case "report":
+	case reportKey:
 		return setReportChannel(p.API, channelID)
-	case "configuration-changes":
+	case configurationChangesKey:
 		return setChangesChannel(p.API, channelID)
 	default:
 		return unknownParameterMessage(parameters[0])
@@ -470,13 +489,13 @@ func (p *Plugin) unsubscribe(parameters []string) string {
 	const unsubscribingUnsuccessful = "Unsubscribing unsuccessful."
 
 	switch parameters[0] {
-	case "report":
-		if err := p.API.KVDelete(reportChannelKey); err != nil {
+	case reportKey:
+		if err := p.API.KVDelete(reportKey); err != nil {
 			p.API.LogError("KVDelete", logErrorKey, err)
 			return unsubscribingUnsuccessful
 		}
-	case "configuration-changes":
-		if err := p.API.KVDelete(changesChannelKey); err != nil {
+	case configurationChangesKey:
+		if err := p.API.KVDelete(configurationChangesKey); err != nil {
 			p.API.LogError("KVDelete", logErrorKey, err)
 			return unsubscribingUnsuccessful
 		}
