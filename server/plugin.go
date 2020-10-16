@@ -82,8 +82,10 @@ func (p *Plugin) OnActivate() error {
 		return fmt.Errorf("ioutil.ReadFile: %w", err)
 	}
 
-	if err := p.API.SetProfileImage(botUserID, profileImage); err != nil {
-		return fmt.Errorf("p.API.SetProfileImage: %w", err)
+	if len(profileImage) > 0 {
+		if err := p.API.SetProfileImage(botUserID, profileImage); err != nil {
+			return fmt.Errorf("p.API.SetProfileImage: %w", err)
+		}
 	}
 
 	if err := p.API.RegisterCommand(p.getCommand()); err != nil {
