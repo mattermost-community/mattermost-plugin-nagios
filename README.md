@@ -55,7 +55,7 @@ We will be happy to help.
 
 ## Installing the plugin
 
-1. Download the latest version of the plugin from the [releases page](https://github.com/ulumuri/mattermost-plugin-nagios/releases)
+1. Download the latest stable version of the plugin from the [releases page](https://github.com/ulumuri/mattermost-plugin-nagios/releases)
 2. In Mattermost, go to **System Console → Plugins → Management**
 3. Upload the plugin in the **Upload Plugin** section
 4. Configure the plugin before you enable it :arrow_down:
@@ -80,8 +80,40 @@ We will be happy to help.
     2. Click *Regenerate* to regenerate the token
     3. Copy the token (you are going to use it later)
 2. Click *Save* to save the settings
+3. Switch to the machine where Nagios is running (preferably)
+    1. Download the latest stable version of the watcher from the [releases page](https://github.com/ulumuri/mattermost-plugin-nagios/releases)
+    2. Move the watcher
+        1. `chmod +x watcher && sudo mv watcher /usr/local/bin/`
+    3. You will most probably want to run the watcher as a systemd service :arrow_down:
 
-`TODO(amwolff): add the rest of the setup instructions for the configuration files watcher.`
+#### Running the watcher as a systemd service
+
+##### Preparing the systemd service unit file
+
+Adjust the `dir` (default if not set: `/usr/local/nagios/etc/`), `url` and `token` flags to your setup.
+
+```shell script
+sudo cat << EOF > /etc/systemd/system/mattermost-plugin-nagios-watcher.service
+[Unit]
+Description=Nagios configuration files monitoring service
+After=network.target
+
+[Service]
+Restart=on-failure
+ExecStart=/usr/local/bin/watcher -dir /nagios/configuration/files/directory -url https://mattermost.server.address/plugins/nagios -token TheTokenFromStep1
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+##### Starting the watcher
+
+```shell script
+systemctl daemon-reload
+systemctl enable mattermost-plugin-nagios-watcher.service
+systemctl start  mattermost-plugin-nagios-watcher.service
+```
 
 ## Updating the plugin
 
