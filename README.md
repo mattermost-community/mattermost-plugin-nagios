@@ -1,6 +1,4 @@
-# Mattermost Nagios Plugin
-
-<!-- TODO(amwolff): add CI badges and stuff. -->
+# Mattermost Nagios Plugin ![Ulumuri Technologies](https://circleci.com/gh/ulumuri/mattermost-plugin-nagios.svg?style=svg)
 
 **Maintainers**: [@amwolff](https://github.com/amwolff) & [@DanielSz50](https://github.com/DanielSz50)
 
