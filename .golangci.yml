@@ -22,7 +22,6 @@ linters:
     - deadcode
     - errcheck
     - gocritic
-    - godot
     - gofmt
     - goimports
     - golint
