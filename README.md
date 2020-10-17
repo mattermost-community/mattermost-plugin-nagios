@@ -14,6 +14,9 @@ A Nagios plugin for Mattermost. Supports Nagios Core >= 4.4.x.
 - [Installing the plugin](https://github.com/ulumuri/mattermost-plugin-nagios/#installing-the-plugin)
 - [Configuring the plugin](https://github.com/ulumuri/mattermost-plugin-nagios/#configuring-the-plugin)
     - [Configuring the configuration files watcher](https://github.com/ulumuri/mattermost-plugin-nagios/#configuring-the-configuration-files-watcher)
+        - [Running the watcher as a systemd service](https://github.com/ulumuri/mattermost-plugin-nagios/#running-the-watcher-as-a-systemd-service)
+            - [Preparing the systemd service unit file](https://github.com/ulumuri/mattermost-plugin-nagios/#preparing-the-systemd-service-unit-file)
+            - [Starting the watcher](https://github.com/ulumuri/mattermost-plugin-nagios/#starting-the-watcher)
 - [Updating the plugin](https://github.com/ulumuri/mattermost-plugin-nagios/#updating-the-plugin)
 - [Using the plugin](https://github.com/ulumuri/mattermost-plugin-nagios/#using-the-plugin)
     - [Slash commands overview](https://github.com/ulumuri/mattermost-plugin-nagios/#slash-commands-overview)
@@ -82,8 +85,7 @@ We will be happy to help.
 2. Click *Save* to save the settings
 3. Switch to the machine where Nagios is running (preferably)
     1. Download the latest stable version of the watcher from the [releases page](https://github.com/ulumuri/mattermost-plugin-nagios/releases)
-    2. Move the watcher
-        1. `chmod +x watcher && sudo mv watcher /usr/local/bin/`
+    2. Move the watcher: `chmod +x watcher && sudo mv watcher /usr/local/bin/`
     3. You will most probably want to run the watcher as a systemd service :arrow_down:
 
 #### Running the watcher as a systemd service
