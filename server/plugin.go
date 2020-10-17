@@ -82,6 +82,9 @@ func (p *Plugin) OnActivate() error {
 		return fmt.Errorf("ioutil.ReadFile: %w", err)
 	}
 
+	// NOTICE: Drop below conditional after the Nagios Core logo is in the
+	// repository by default (and we're sure we won't be doing anything illegal
+	// having it there).
 	if len(profileImage) > 0 {
 		if err := p.API.SetProfileImage(botUserID, profileImage); err != nil {
 			return fmt.Errorf("p.API.SetProfileImage: %w", err)

@@ -20,6 +20,7 @@ func formatChange(change watcher.Change) string {
 
 	b.WriteString("```diff\n")
 
+	// TODO(amwolff): update the threshold (it's lower now).
 	if utf8.RuneCountInString(change.Diff) > 16077 {
 		b.WriteString("File has been changed, but the diff is too long.")
 	} else {
