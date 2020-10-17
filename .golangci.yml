@@ -22,6 +22,7 @@ linters:
     - deadcode
     - errcheck
     - gocritic
+    - godot
     - gofmt
     - goimports
     - golint
@@ -39,7 +40,7 @@ linters:
     - unused
     - varcheck
     - whitespace
-#    - wsl
+    - wsl
 
 issues:
   exclude-rules:

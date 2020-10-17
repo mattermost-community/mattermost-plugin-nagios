@@ -93,6 +93,7 @@ func formatHostList(list nagios.HostList) string {
 
 	if len(hosts) > maximumReportLength {
 		abnormalOnly = true
+
 		b.WriteString("**Too many hosts. Showing only abnormal state hosts.**\n\n")
 	}
 
@@ -111,6 +112,7 @@ func formatHostList(list nagios.HostList) string {
 		if linesWritten > 0 {
 			b.WriteRune('\n')
 		}
+
 		b.WriteString(fmt.Sprintf("%s `%s` %s", emoji(h.state), h.name, strings.ToUpper(h.state)))
 		linesWritten++
 	}
@@ -212,6 +214,7 @@ func formatServiceList(list nagios.ServiceList) string {
 
 	if reportLength > maximumReportLength {
 		abnormalOnly = true
+
 		b.WriteString("**Too many services. Showing only abnormal state services.**\n\n")
 	}
 
@@ -239,6 +242,7 @@ func formatServiceList(list nagios.ServiceList) string {
 				if linesWritten > 0 {
 					b.WriteString("\n\n")
 				}
+
 				b.WriteString(fmt.Sprintf("`%s`:", h))
 				linesWritten++
 
@@ -274,6 +278,7 @@ func (p *Plugin) sendMessages(channelID string, messages ...string) error {
 			return fmt.Errorf("p.API.CreatePost: %w", err)
 		}
 	}
+
 	return nil
 }
 
@@ -368,6 +373,7 @@ func (p *Plugin) monitoringReportLoop() {
 			if appErr != nil {
 				p.API.LogError("KVSetWithOptions", logErrorKey, err)
 			}
+
 			continue
 		}
 

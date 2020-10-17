@@ -36,6 +36,7 @@ func getHint(before, after rune, keys ...string) string {
 		if i > 0 {
 			b.WriteRune('|')
 		}
+
 		b.WriteString(k)
 	}
 
@@ -191,6 +192,7 @@ func parseCommandArgs(args *model.CommandArgs) (
 	if len(fields) > 0 {
 		command = fields[0]
 	}
+
 	if len(fields) > 1 {
 		action = fields[1]
 	}

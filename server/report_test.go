@@ -15,6 +15,7 @@ func Test_gettingReportUnsuccessfulMessage(t *testing.T) {
 		reportPart string
 		message    string
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -41,6 +42,7 @@ func Test_gettingReportUnsuccessfulMessage(t *testing.T) {
 
 func Test_reportPreamble(t *testing.T) {
 	now := time.Now()
+
 	tests := []struct {
 		name string
 		t    time.Time
@@ -52,6 +54,7 @@ func Test_reportPreamble(t *testing.T) {
 			want: "#### :bar_chart: System monitoring report (" + now.Format(time.UnixDate) + ")\n\n",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := reportPreamble(tt.t); got != tt.want {

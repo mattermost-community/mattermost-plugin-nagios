@@ -16,7 +16,7 @@ func formatChange(change watcher.Change) string {
 	var b strings.Builder
 
 	b.WriteString(fmt.Sprintf("**%s** has been modified", change.Name))
-	b.WriteString(" (-previous +actual):\n\n")
+	b.WriteString(" (-previous +current):\n\n")
 
 	b.WriteString("```diff\n")
 
@@ -46,9 +46,11 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 		http.Error(w, notConfigured, http.StatusNotImplemented)
 		return
 	}
+
 	if token != r.Header.Get(watcher.TokenHeader) {
 		p.API.LogWarn("Changes handler called, but authentication failed")
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+
 		return
 	}
 
@@ -61,6 +63,7 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 	if channelID == "" { // fast path, there is no subscription.
 		p.API.LogWarn("Changes handler called, but there is no subscription")
 		http.Error(w, notConfigured, http.StatusNotImplemented)
+
 		return
 	}
 
@@ -69,6 +72,7 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 	if err := json.NewDecoder(r.Body).Decode(&change); err != nil {
 		p.API.LogError("Decode", logErrorKey, err)
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+
 		return
 	}
 

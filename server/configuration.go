@@ -29,6 +29,7 @@ func (c *configuration) isValid() error {
 	if len(c.NagiosURL) == 0 {
 		return errors.New("the Nagios URL must be set")
 	}
+
 	return nil
 }
 

@@ -139,6 +139,7 @@ func formatHostName(name, alt string) string {
 	if len(name) == 0 {
 		return alt
 	}
+
 	return name
 }
 
@@ -187,6 +188,7 @@ func formatAlerts(alerts nagios.AlertList) string {
 		if i > 0 {
 			b.WriteRune('\n')
 		}
+
 		b.WriteString(formatAlertListEntry(v))
 	}
 
@@ -220,6 +222,7 @@ func formatNotifications(notifications nagios.NotificationList) string {
 		if i > 0 {
 			b.WriteRune('\n')
 		}
+
 		b.WriteString(formatNotificationListEntry(v))
 	}
 
@@ -244,11 +247,13 @@ func getLogsSpecific(parameters []string) (hostName, serviceDescription, message
 		if len(parameters) < 2 {
 			return "", "", "You must supply host name.", false
 		}
+
 		return parameters[1], "", "", true
 	case serviceKey:
 		if len(parameters) < 2 {
 			return "", "", "You must supply service description.", false
 		}
+
 		return "", parameters[1], "", true
 	default:
 		return "", "", unknownParameterMessage(parameters[0]), false
@@ -294,11 +299,14 @@ func (p *Plugin) getLogs(parameters []string) string {
 				EndTime:            now.Unix(),
 			},
 		}
+
 		var alerts nagios.AlertList
+
 		if err := p.client.Query(q, &alerts); err != nil {
 			p.API.LogError("Query", logErrorKey, err)
 			return gettingLogsUnsuccessful
 		}
+
 		return formatAlerts(alerts)
 	case notificationsKey:
 		q := nagios.NotificationListRequest{
@@ -313,11 +321,14 @@ func (p *Plugin) getLogs(parameters []string) string {
 				EndTime:            now.Unix(),
 			},
 		}
+
 		var notifications nagios.NotificationList
+
 		if err := p.client.Query(q, &notifications); err != nil {
 			p.API.LogError("Query", logErrorKey, err)
 			return gettingLogsUnsuccessful
 		}
+
 		return formatNotifications(notifications)
 	default:
 		return unknownParameterMessage(parameters[0])

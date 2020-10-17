@@ -80,6 +80,7 @@ func WatchDirectories(
 			if !ok {
 				return nil
 			}
+
 			log.Printf("Received an error from Errors queue: %v", err)
 		case _, ok := <-done:
 			if !ok {
@@ -125,6 +126,7 @@ func (d Differential) sendDiff(path string, diff string) error {
 	if err != nil {
 		return fmt.Errorf("http.NewRequest: %w", err)
 	}
+
 	req.Header.Set("Content-Type", http.DetectContentType(b))
 	req.Header.Set(TokenHeader, d.token)
 
@@ -165,7 +167,7 @@ func (d Differential) WatchFn(path string) error {
 	diff := cmp.Diff(string(d.previousContents[path]), string(contents))
 
 	if err := d.sendDiff(path, diff); err != nil {
-		return fmt.Errorf("sendDiff: %w", err)
+		return fmt.Errorf("d.sendDiff: %w", err)
 	}
 
 	log.Printf("Sent the diff (size = %d)", len(diff))
@@ -199,6 +201,7 @@ func NewDifferential(
 		if err != nil {
 			return Differential{}, fmt.Errorf("ioutil.ReadFile: %w", err)
 		}
+
 		previousChecksum[p] = md5.Sum(b) //nolint:gosec
 		previousContents[p] = b
 	}
