@@ -402,7 +402,7 @@ type ServiceDetails struct {
 	ShouldBeScheduled bool   `json:"should_be_scheduled"`
 	LastCheck         int64  `json:"last_check"`
 
-	// CheckOptions with bitmask turns to the array
+	// CheckOptions with bitmask turns into an array.
 	CheckOptions               json.RawMessage `json:"check_options"`
 	CheckType                  string          `json:"check_type"`
 	ChecksEnabled              bool            `json:"checks_enabled"`
