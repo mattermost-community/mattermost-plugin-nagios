@@ -51,12 +51,12 @@ It's the programmatic equivalent of the `<nagios>/nagios/jsonquery.html`.
     - [ ] hostescalationcount
     - [ ] hostescalationlist
 - [ ] Status JSON CGI
-    - [ ] hostcount
-    - [ ] hostlist
-    - [ ] host
-    - [ ] servicecount
-    - [ ] servicelist
-    - [ ] service
+    - [x] hostcount
+    - [x] hostlist
+    - [x] host
+    - [x] servicecount
+    - [x] servicelist
+    - [x] service
     - [ ] commentcount
     - [ ] commentlist
     - [ ] comment
@@ -64,7 +64,7 @@ It's the programmatic equivalent of the `<nagios>/nagios/jsonquery.html`.
     - [ ] downtimelist
     - [ ] downtime
     - [ ] programstatus
-    - [ ] performancedata
+    - [x] performancedata
 
 ## Compatibility
 
