@@ -49,7 +49,7 @@ func (c Client) Query(b QueryBuilder, v interface{}) error {
 
 	if res.StatusCode != http.StatusOK {
 		// io.Copy(ioutil.Discard, res.Body)
-		return fmt.Errorf("non-200 respone status code (%d)", res.StatusCode)
+		return fmt.Errorf("non-200 response status code (%d)", res.StatusCode)
 	}
 
 	d := json.NewDecoder(res.Body)
