@@ -93,7 +93,7 @@ We will be happy to help.
 Adjust the `dir` (default if not set: `/usr/local/nagios/etc/`), `url` and `token` flags to your setup.
 
 ```shell script
-sudo cat << EOF > /etc/systemd/system/mattermost-plugin-nagios-watcher.service
+sudo bash -c 'cat << EOF > /etc/systemd/system/mattermost-plugin-nagios-watcher.service
 [Unit]
 Description=Nagios configuration files monitoring service
 After=network.target
@@ -104,7 +104,7 @@ ExecStart=/usr/local/bin/watcher -dir /nagios/configuration/files/directory -url
 
 [Install]
 WantedBy=multi-user.target
-EOF
+EOF'
 ```
 
 ##### Starting the watcher
