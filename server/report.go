@@ -93,6 +93,7 @@ func formatHostList(list nagios.HostList) string {
 
 	if len(hosts) > maximumReportLength {
 		abnormalOnly = true
+
 		b.WriteString("**Too many hosts. Showing only abnormal state hosts.**\n\n")
 	}
 
@@ -111,6 +112,7 @@ func formatHostList(list nagios.HostList) string {
 		if linesWritten > 0 {
 			b.WriteRune('\n')
 		}
+
 		b.WriteString(fmt.Sprintf("%s `%s` %s", emoji(h.state), h.name, strings.ToUpper(h.state)))
 		linesWritten++
 	}
@@ -212,6 +214,7 @@ func formatServiceList(list nagios.ServiceList) string {
 
 	if reportLength > maximumReportLength {
 		abnormalOnly = true
+
 		b.WriteString("**Too many services. Showing only abnormal state services.**\n\n")
 	}
 
@@ -239,6 +242,7 @@ func formatServiceList(list nagios.ServiceList) string {
 				if linesWritten > 0 {
 					b.WriteString("\n\n")
 				}
+
 				b.WriteString(fmt.Sprintf("`%s`:", h))
 				linesWritten++
 
@@ -274,6 +278,7 @@ func (p *Plugin) sendMessages(channelID string, messages ...string) error {
 			return fmt.Errorf("p.API.CreatePost: %w", err)
 		}
 	}
+
 	return nil
 }
 
@@ -343,51 +348,49 @@ func (p *Plugin) sendMonitoringReport(channelID string) error {
 	return nil
 }
 
-func (p *Plugin) addMonitoringReport(channelID string, stop <-chan bool) {
+const reportLockKey = "report-lock"
+
+var reportLock = []byte{0b10, 0b1, 0b11, 0b111}
+
+func (p *Plugin) monitoringReportLoop() {
 	for {
+		time.Sleep(time.Minute)
+
 		d, err := getReportFrequency(p.API)
 		if err != nil {
 			p.API.LogError("getReportFrequency", logErrorKey, err)
+			continue
 		}
-		select {
-		case <-stop:
-			return
-		case <-time.NewTimer(d).C:
-			if err := p.sendMonitoringReport(channelID); err != nil {
-				p.API.LogError("sendMonitoringReport", logErrorKey, err)
+
+		opts := model.PluginKVSetOptions{
+			Atomic:          true,
+			OldValue:        nil,
+			ExpireInSeconds: int64(d.Seconds()),
+		}
+
+		ok, appErr := p.API.KVSetWithOptions(reportLockKey, reportLock, opts)
+		if !ok {
+			if appErr != nil {
+				p.API.LogError("KVSetWithOptions", logErrorKey, err)
 			}
+
+			continue
+		}
+
+		p.API.LogDebug("Acquired lock", "id", p.API.GetDiagnosticId())
+
+		c, err := getReportChannel(p.API)
+		if err != nil {
+			p.API.LogError("getReportChannel", logErrorKey, err)
+			continue
+		}
+
+		if c == "" { // fast path, there is no subscription.
+			continue
+		}
+
+		if err := p.sendMonitoringReport(c); err != nil {
+			p.API.LogError("sendMonitoringReport", logErrorKey, err)
 		}
 	}
-}
-
-func (p *Plugin) subscribe(channelID string, parameters []string) string {
-	if len(parameters) > 0 {
-		return "subscribe does not take any additional parameters."
-	}
-
-	stop := make(chan bool, 1)
-
-	go p.addMonitoringReport(channelID, stop)
-
-	p.subscriptionStop = stop
-
-	return "Subscribed successfully."
-}
-
-func subscribe(p *Plugin, channelID string, parameters []string) string {
-	return p.subscribe(channelID, parameters)
-}
-
-func (p *Plugin) unsubscribe(parameters []string) string {
-	if len(parameters) > 0 {
-		return "unsubscribe does not take any additional parameters."
-	}
-
-	p.subscriptionStop <- true
-
-	return "Unsubscribed successfully."
-}
-
-func unsubscribe(p *Plugin, channelID string, parameters []string) string {
-	return p.unsubscribe(parameters)
 }

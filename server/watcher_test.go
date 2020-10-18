@@ -10,22 +10,41 @@ import (
 )
 
 func TestServeHTTP(t *testing.T) {
-	plugin := Plugin{
-		configuration: &configuration{
-			Token: "test",
-		},
-	}
+	var plugin Plugin
 
-	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	t.Run("invalid method", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/", nil)
 
-	plugin.ServeHTTP(nil, w, r)
+		plugin.ServeHTTP(nil, w, r)
 
-	result := w.Result()
-	assert.NotNil(t, result)
-	defer result.Body.Close()
+		result := w.Result()
+		assert.NotNil(t, result)
+		defer result.Body.Close()
 
-	bodyBytes, err := ioutil.ReadAll(result.Body)
-	assert.Nil(t, err)
-	assert.Equal(t, "Unauthorized\n", string(bodyBytes))
+		assert.Equal(t, http.StatusBadRequest, result.StatusCode)
+
+		b, err := ioutil.ReadAll(result.Body)
+		assert.Nil(t, err)
+
+		assert.Equal(t, "Bad Request\n", string(b))
+	})
+
+	t.Run("no token", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodPost, "/", nil)
+
+		plugin.ServeHTTP(nil, w, r)
+
+		result := w.Result()
+		assert.NotNil(t, result)
+		defer result.Body.Close()
+
+		assert.Equal(t, http.StatusNotImplemented, result.StatusCode)
+
+		b, err := ioutil.ReadAll(result.Body)
+		assert.Nil(t, err)
+
+		assert.Equal(t, "This functionality is not configured.\n", string(b))
+	})
 }

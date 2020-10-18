@@ -1,6 +1,4 @@
-# Mattermost Nagios Plugin
-
-<!-- TODO(amwolff): add CI badges and stuff. -->
+# Mattermost Nagios Plugin ![Ulumuri Technologies](https://circleci.com/gh/ulumuri/mattermost-plugin-nagios.svg?style=svg)
 
 **Maintainers**: [@amwolff](https://github.com/amwolff) & [@DanielSz50](https://github.com/DanielSz50)
 
@@ -14,6 +12,9 @@ A Nagios plugin for Mattermost. Supports Nagios Core >= 4.4.x.
 - [Installing the plugin](https://github.com/ulumuri/mattermost-plugin-nagios/#installing-the-plugin)
 - [Configuring the plugin](https://github.com/ulumuri/mattermost-plugin-nagios/#configuring-the-plugin)
     - [Configuring the configuration files watcher](https://github.com/ulumuri/mattermost-plugin-nagios/#configuring-the-configuration-files-watcher)
+        - [Running the watcher as a systemd service](https://github.com/ulumuri/mattermost-plugin-nagios/#running-the-watcher-as-a-systemd-service)
+            - [Preparing the systemd service unit file](https://github.com/ulumuri/mattermost-plugin-nagios/#preparing-the-systemd-service-unit-file)
+            - [Starting the watcher](https://github.com/ulumuri/mattermost-plugin-nagios/#starting-the-watcher)
 - [Updating the plugin](https://github.com/ulumuri/mattermost-plugin-nagios/#updating-the-plugin)
 - [Using the plugin](https://github.com/ulumuri/mattermost-plugin-nagios/#using-the-plugin)
     - [Slash commands overview](https://github.com/ulumuri/mattermost-plugin-nagios/#slash-commands-overview)
@@ -35,9 +36,9 @@ This plugin allows you to
 
 - [x] get logs from specific systems without leaving the Mattermost
     - get alerts and notifications instantly delivered, resembling the `showlog.cgi` UI
-- [x] receive the system monitoring reports on a subscribed channel
+- [x] receive system monitoring reports on a subscribed channel
     - be frequently informed which hosts and/or services have an abnormal state
-- [ ] (in progress) receive notifications about changes to the configuration on a subscribed channel
+- [x] receive notifications about changes to the configuration on a subscribed channel
     - anytime a change has been made to Nagios configuration, receive a diff between the old and the new version
 
 Ultimately, this will make you or your team more productive and make the experience with Nagios smoother.
@@ -50,12 +51,12 @@ This guide is for Mattermost System Admins setting up the Nagios plugin and Matt
 
 If you are a Nagios admin/user and think there is something this plugin lacks or something that it does could be done the other way around, let us know!
 We are trying to develop this plugin based on users' needs.
-If there is a certain feature you or your team needs, open up an issue and explain your needs.
+If there is a certain feature you or your team needs, open up an issue, and explain your needs.
 We will be happy to help.
 
 ## Installing the plugin
 
-1. Download the latest version of the plugin from the [releases page](https://github.com/ulumuri/mattermost-plugin-nagios/releases)
+1. Download the latest stable version of the plugin from the [releases page](https://github.com/ulumuri/mattermost-plugin-nagios/releases)
 2. In Mattermost, go to **System Console → Plugins → Management**
 3. Upload the plugin in the **Upload Plugin** section
 4. Configure the plugin before you enable it :arrow_down:
@@ -80,8 +81,39 @@ We will be happy to help.
     2. Click *Regenerate* to regenerate the token
     3. Copy the token (you are going to use it later)
 2. Click *Save* to save the settings
+3. Switch to the machine where Nagios is running (preferably)
+    1. Download the latest stable version of the watcher from the [releases page](https://github.com/ulumuri/mattermost-plugin-nagios/releases)
+    2. Move the watcher: `chmod +x watcher && sudo mv watcher /usr/local/bin/`
+    3. You will most probably want to run the watcher as a systemd service :arrow_down:
 
-`TODO(amwolff): add the rest of the setup instructions for the configuration files watcher.`
+#### Running the watcher as a systemd service
+
+##### Preparing the systemd service unit file
+
+Adjust the `dir` (default if not set: `/usr/local/nagios/etc/`), `url` and `token` flags to your setup.
+
+```shell script
+sudo cat << EOF > /etc/systemd/system/mattermost-plugin-nagios-watcher.service
+[Unit]
+Description=Nagios configuration files monitoring service
+After=network.target
+
+[Service]
+Restart=on-failure
+ExecStart=/usr/local/bin/watcher -dir /nagios/configuration/files/directory -url https://mattermost.server.address/plugins/nagios -token TheTokenFromStep1
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+##### Starting the watcher
+
+```shell script
+systemctl daemon-reload
+systemctl enable mattermost-plugin-nagios-watcher.service
+systemctl start  mattermost-plugin-nagios-watcher.service
+```
 
 ## Updating the plugin
 
@@ -98,8 +130,8 @@ Interaction with the plugin involves using the slash commands.
         - `[host|service <host name|service description>]`
     - `set-logs-limit <count>`
     - `set-logs-start-time <seconds>`
-    - `subscribe`
-    - `unsubscribe`
+    - `subscribe <report|configuration-changes>`
+    - `unsubscribe <report|configuration-changes>`
     - `set-report-frequency <minutes>`
 
 ### Slash commands documentation
@@ -140,7 +172,7 @@ Example: `/nagios get-logs alerts service Swap-Is-Low`
 
 This action allows you to limit the number of logs `get-logs` fetches.
 
-Example: `/nagios set-logs-limit 100`
+Example: `/nagios set-logs-limit 10`
 
 ##### set-logs-start-time
 
@@ -152,27 +184,27 @@ Example: `/nagios set-logs-start-time 3600`
 
 ##### subscribe
 
-`subscribe`
+`subscribe <report|configuration-changes>`
 
-This action allows you to subscribe to the system monitoring reports on the current channel.
+This action allows you to subscribe to system monitoring reports or configuration changes on the current channel.
 
-Example: `/nagios subscribe`
+Example: `/nagios subscribe report`
 
 ##### unsubscribe
 
-`unsubscribe`
+`unsubscribe <report|configuration-changes>`
 
-This action allows you to unsubscribe from the system monitoring reports.
+This action allows you to unsubscribe from system monitoring reports or configuration changes on the current channel.
 
-Example: `/nagios unsubscribe`
+Example: `/nagios unsubscribe configuration-changes`
 
 ##### set-report-frequency
 
 `set-report-frequency <minutes>`
 
-This action allows you to set the frequency of the system monitoring reports.
+This action allows you to set the frequency of system monitoring reports.
 
-Example: `/nagios set-report-frequency 15`
+Example: `/nagios set-report-frequency 60`
 
 ## Contributing
 

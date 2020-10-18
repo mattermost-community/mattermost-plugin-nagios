@@ -29,8 +29,6 @@ type Plugin struct {
 	botUserID string
 
 	commandHandlers map[string]commandHandlerFunc
-
-	subscriptionStop chan<- bool
 }
 
 func (p *Plugin) setDefaultKV(key string, value interface{}) error {
@@ -47,9 +45,9 @@ func (p *Plugin) setDefaultKV(key string, value interface{}) error {
 }
 
 var defaultKVStore = map[string]interface{}{
-	logsLimitKey:       defaultLogsLimit,
-	logsStartTimeKey:   defaultLogsStartTime,
-	reportFrequencyKey: defaultReportFrequency,
+	setLogsLimitKey:       defaultLogsLimit,
+	setLogsStartTimeKey:   defaultLogsStartTime,
+	setReportFrequencyKey: defaultReportFrequency,
 }
 
 func (p *Plugin) storeDefaultKV() error {
@@ -84,8 +82,13 @@ func (p *Plugin) OnActivate() error {
 		return fmt.Errorf("ioutil.ReadFile: %w", err)
 	}
 
-	if err := p.API.SetProfileImage(botUserID, profileImage); err != nil {
-		return fmt.Errorf("p.API.SetProfileImage: %w", err)
+	// NOTICE: Drop below conditional after the Nagios Core logo is in the
+	// repository by default (and we're sure we won't be doing anything illegal
+	// having it there).
+	if len(profileImage) > 0 {
+		if err := p.API.SetProfileImage(botUserID, profileImage); err != nil {
+			return fmt.Errorf("p.API.SetProfileImage: %w", err)
+		}
 	}
 
 	if err := p.API.RegisterCommand(p.getCommand()); err != nil {
@@ -95,6 +98,8 @@ func (p *Plugin) OnActivate() error {
 	if err := p.storeDefaultKV(); err != nil {
 		return fmt.Errorf("p.storeDefaultKV: %w", err)
 	}
+
+	go p.monitoringReportLoop()
 
 	return nil
 }
