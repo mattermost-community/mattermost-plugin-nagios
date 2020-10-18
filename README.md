@@ -6,29 +6,33 @@ A Nagios plugin for Mattermost. Supports Nagios Core >= 4.4.x.
 
 ## Table of contents
 
-- [About](https://github.com/ulumuri/mattermost-plugin-nagios/#about)
-    - [Audience](https://github.com/ulumuri/mattermost-plugin-nagios/#audience)
-    - [Important notice](https://github.com/ulumuri/mattermost-plugin-nagios/#important-notice)
-- [Installing the plugin](https://github.com/ulumuri/mattermost-plugin-nagios/#installing-the-plugin)
-- [Configuring the plugin](https://github.com/ulumuri/mattermost-plugin-nagios/#configuring-the-plugin)
-    - [Configuring the configuration files watcher](https://github.com/ulumuri/mattermost-plugin-nagios/#configuring-the-configuration-files-watcher)
-        - [Running the watcher as a systemd service](https://github.com/ulumuri/mattermost-plugin-nagios/#running-the-watcher-as-a-systemd-service)
-            - [Preparing the systemd service unit file](https://github.com/ulumuri/mattermost-plugin-nagios/#preparing-the-systemd-service-unit-file)
-            - [Starting the watcher](https://github.com/ulumuri/mattermost-plugin-nagios/#starting-the-watcher)
-- [Updating the plugin](https://github.com/ulumuri/mattermost-plugin-nagios/#updating-the-plugin)
-- [Using the plugin](https://github.com/ulumuri/mattermost-plugin-nagios/#using-the-plugin)
-    - [Slash commands overview](https://github.com/ulumuri/mattermost-plugin-nagios/#slash-commands-overview)
-    - [Slash commands documentation](https://github.com/ulumuri/mattermost-plugin-nagios/#slash-commands-documentation)
-        - [nagios](https://github.com/ulumuri/mattermost-plugin-nagios/#nagios)
-            - [get-logs](https://github.com/ulumuri/mattermost-plugin-nagios/#get-logs)
-                - [host](https://github.com/ulumuri/mattermost-plugin-nagios/#host)
-                - [service](https://github.com/ulumuri/mattermost-plugin-nagios/#service)
-        - [set-logs-limit](https://github.com/ulumuri/mattermost-plugin-nagios/#set-logs-limit)
-        - [set-logs-start-time](https://github.com/ulumuri/mattermost-plugin-nagios/#set-logs-start-time)
-        - [subscribe](https://github.com/ulumuri/mattermost-plugin-nagios/#subscribe)
-        - [unsubscribe](https://github.com/ulumuri/mattermost-plugin-nagios/#unsubscribe)
-        - [set-report-frequency](https://github.com/ulumuri/mattermost-plugin-nagios/#set-report-frequency)
-- [Contributing](https://github.com/ulumuri/mattermost-plugin-nagios/#contributing)
+- [About](https://github.com/ulumuri/mattermost-plugin-nagios#about)
+    - [Screenshots](https://github.com/ulumuri/mattermost-plugin-nagios#screenshots)
+        - [Getting logs](https://github.com/ulumuri/mattermost-plugin-nagios#getting-logs)
+        - [Receiving system monitoring reports](https://github.com/ulumuri/mattermost-plugin-nagios#receiving-system-monitoring-reports)
+        - [Receiving notifications about changes to the configuration](https://github.com/ulumuri/mattermost-plugin-nagios#receiving-notifications-about-changes-to-the-configuration)
+    - [Audience](https://github.com/ulumuri/mattermost-plugin-nagios#audience)
+    - [Important notice](https://github.com/ulumuri/mattermost-plugin-nagios#important-notice)
+- [Installing the plugin](https://github.com/ulumuri/mattermost-plugin-nagios#installing-the-plugin)
+- [Configuring the plugin](https://github.com/ulumuri/mattermost-plugin-nagios#configuring-the-plugin)
+    - [Configuring the configuration files watcher](https://github.com/ulumuri/mattermost-plugin-nagios#configuring-the-configuration-files-watcher)
+        - [Running the watcher as a systemd service](https://github.com/ulumuri/mattermost-plugin-nagios#running-the-watcher-as-a-systemd-service)
+            - [Preparing the systemd service unit file](https://github.com/ulumuri/mattermost-plugin-nagios#preparing-the-systemd-service-unit-file)
+            - [Starting the watcher](https://github.com/ulumuri/mattermost-plugin-nagios#starting-the-watcher)
+- [Updating the plugin](https://github.com/ulumuri/mattermost-plugin-nagios#updating-the-plugin)
+- [Using the plugin](https://github.com/ulumuri/mattermost-plugin-nagios#using-the-plugin)
+    - [Slash commands overview](https://github.com/ulumuri/mattermost-plugin-nagios#slash-commands-overview)
+    - [Slash commands documentation](https://github.com/ulumuri/mattermost-plugin-nagios#slash-commands-documentation)
+        - [nagios](https://github.com/ulumuri/mattermost-plugin-nagios#nagios)
+            - [get-logs](https://github.com/ulumuri/mattermost-plugin-nagios#get-logs)
+                - [host](https://github.com/ulumuri/mattermost-plugin-nagios#host)
+                - [service](https://github.com/ulumuri/mattermost-plugin-nagios#service)
+        - [set-logs-limit](https://github.com/ulumuri/mattermost-plugin-nagios#set-logs-limit)
+        - [set-logs-start-time](https://github.com/ulumuri/mattermost-plugin-nagios#set-logs-start-time)
+        - [subscribe](https://github.com/ulumuri/mattermost-plugin-nagios#subscribe)
+        - [unsubscribe](https://github.com/ulumuri/mattermost-plugin-nagios#unsubscribe)
+        - [set-report-frequency](https://github.com/ulumuri/mattermost-plugin-nagios#set-report-frequency)
+- [Contributing](https://github.com/ulumuri/mattermost-plugin-nagios#contributing)
 
 ## About
 
@@ -42,6 +46,20 @@ This plugin allows you to
     - anytime a change has been made to Nagios configuration, receive a diff between the old and the new version
 
 Ultimately, this will make you or your team more productive and make the experience with Nagios smoother.
+
+### Screenshots
+
+#### Getting logs
+
+![Screenshot of getting logs in action](screenshots/logs.png)
+
+#### Receiving system monitoring reports
+
+![Screenshot of receiving system monitoring reports in action](screenshots/reports.png)
+
+#### Receiving notifications about changes to the configuration
+
+![Screenshot of receiving notifications about changes to the configuration in action](screenshots/changes.png)
 
 ### Audience
 
