@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/mattermost/mattermost-plugin-api/experimental/command"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/ulumuri/go-nagios/nagios"
@@ -60,6 +61,22 @@ func (p *Plugin) storeDefaultKV() error {
 	return nil
 }
 
+func (p *Plugin) getProfileImage() ([]byte, error) {
+	path, err := p.API.GetBundlePath()
+	if err != nil {
+		return nil, fmt.Errorf("p.API.GetBundlePath: %w", err)
+	}
+
+	// NOTICE: We don't use any of the Nagios logos to avoid legal issues.
+	// Instead, we use an image resembling a part of the Nagios Core logo.
+	file, err := ioutil.ReadFile(filepath.Join(path, "assets", "orbit-467260.png"))
+	if err != nil {
+		return nil, fmt.Errorf("ioutil.ReadFile: %w", err)
+	}
+
+	return file, nil
+}
+
 func (p *Plugin) OnActivate() error {
 	botUserID, err := p.Helpers.EnsureBot(&model.Bot{
 		Username:    "nagios",
@@ -72,26 +89,21 @@ func (p *Plugin) OnActivate() error {
 
 	p.botUserID = botUserID
 
-	bundlePath, err := p.API.GetBundlePath()
+	img, err := p.getProfileImage()
 	if err != nil {
-		return fmt.Errorf("p.API.GetBundlePath: %w", err)
+		return fmt.Errorf("p.getProfileImage: %w", err)
 	}
 
-	profileImage, err := ioutil.ReadFile(filepath.Join(bundlePath, "assets", "nagios.png"))
+	if err := p.API.SetProfileImage(botUserID, img); err != nil {
+		return fmt.Errorf("p.API.SetProfileImage: %w", err)
+	}
+
+	ico, err := command.GetIconData(p.API, "assets/orbit-467260.svg")
 	if err != nil {
-		return fmt.Errorf("ioutil.ReadFile: %w", err)
+		return fmt.Errorf("command.GetIconData: %w", err)
 	}
 
-	// NOTICE: Drop below conditional after the Nagios Core logo is in the
-	// repository by default (and we're sure we won't be doing anything illegal
-	// having it there).
-	if len(profileImage) > 0 {
-		if err := p.API.SetProfileImage(botUserID, profileImage); err != nil {
-			return fmt.Errorf("p.API.SetProfileImage: %w", err)
-		}
-	}
-
-	if err := p.API.RegisterCommand(p.getCommand()); err != nil {
+	if err := p.API.RegisterCommand(p.getCommand(ico)); err != nil {
 		return fmt.Errorf("p.API.RegisterCommand: %w", err)
 	}
 
