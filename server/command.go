@@ -169,18 +169,18 @@ func getAutocompleteData(desc string) *model.AutocompleteData {
 	return nagios
 }
 
-func (p *Plugin) getCommand() *model.Command {
+func (p *Plugin) getCommand(iconData string) *model.Command {
 	desc := getAutoCompleteDesc(p.commandHandlers)
 
 	return &model.Command{
-		Trigger:          "nagios",
-		AutoComplete:     true,
-		AutoCompleteDesc: desc,
-		AutoCompleteHint: "[command]",
-		DisplayName:      "Nagios",
-		Description:      "A Mattermost plugin to interact with Nagios",
-		AutocompleteData: getAutocompleteData(desc),
-		// AutocompleteIconData: nil,
+		Trigger:              "nagios",
+		AutoComplete:         true,
+		AutoCompleteDesc:     desc,
+		AutoCompleteHint:     "[command]",
+		DisplayName:          "Nagios",
+		Description:          "A Mattermost plugin to interact with Nagios",
+		AutocompleteData:     getAutocompleteData(desc),
+		AutocompleteIconData: iconData,
 	}
 }
 
