@@ -41,7 +41,7 @@ This plugin allows you to
 - [x] get logs from specific systems without leaving the Mattermost
     - get alerts and notifications instantly delivered, resembling the `showlog.cgi` UI
 - [x] receive system monitoring reports on a subscribed channel
-    - be frequently informed which hosts and/or services have an abnormal state
+    - be frequently informed which hosts and services have an abnormal state
 - [x] receive notifications about changes to the configuration on a subscribed channel
     - anytime a change has been made to Nagios configuration, receive a diff between the old and the new version
 
@@ -101,14 +101,14 @@ We will be happy to help.
 2. Click *Save* to save the settings
 3. Switch to the machine where Nagios is running (preferably)
     1. Download the latest stable version of the watcher from the [releases page](https://github.com/ulumuri/mattermost-plugin-nagios/releases)
-    2. Move the watcher: `chmod +x watcher && sudo mv watcher /usr/local/bin/`
+    2. Move the watcher: `chmod +x watcher1.0.0-rc.linux-amd64 && sudo mv watcher1.0.0-rc.linux-amd64 /usr/local/bin/watcher`
     3. You will most probably want to run the watcher as a systemd service :arrow_down:
 
 #### Running the watcher as a systemd service
 
 ##### Preparing the systemd service unit file
 
-Adjust the `dir` (default if not set: `/usr/local/nagios/etc/`), `url` and `token` flags to your setup.
+Adjust `dir` (default if not set: `/usr/local/nagios/etc/`), `url`, and `token` flags to your setup.
 
 ```shell script
 sudo bash -c 'cat << EOF > /etc/systemd/system/mattermost-plugin-nagios-watcher.service
@@ -139,7 +139,7 @@ To update the plugin repeat the [Installing the plugin](https://github.com/ulumu
 
 ## Using the plugin
 
-Interaction with the plugin involves using the slash commands.
+Interaction with the plugin involves using slash commands.
 
 ### Slash commands overview
 
