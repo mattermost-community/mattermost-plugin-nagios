@@ -3,7 +3,6 @@ package watcher
 import (
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,40 +13,41 @@ import (
 
 func TestGetAllInDirectory(t *testing.T) {
 	expectedDirCount := 2
-
-	dir1, err := ioutil.TempDir("", "watcher_test1")
-	if err != nil {
-		t.Fatalf("ioutil.TempDir: %v", err)
-	}
-	defer os.RemoveAll(dir1)
-
-	dir2, err := ioutil.TempDir(dir1, "watcher_test2")
-	if err != nil {
-		t.Fatalf("ioutil.TempDir: %v", err)
-	}
-
 	expectedFilesCount := 0
+	ignoredExtensions := []string{".swp"}
+
+	baseDir, err := ioutil.TempDir("", "watcher_test1")
+	if err != nil {
+		t.Fatalf("ioutil.TempDir: %v", err)
+	}
+
+	defer os.RemoveAll(baseDir)
+
+	subDir, err := ioutil.TempDir(baseDir, "watcher_test2")
+	if err != nil {
+		t.Fatalf("ioutil.TempDir: %v", err)
+	}
+
 	for i := 0; i < 10; i++ {
-		file := filepath.Join(dir1, fmt.Sprintf("test_file_%d", i))
-		if err := ioutil.WriteFile(file, []byte(":octopus:"), 0644); err != nil {
+		file := filepath.Join(baseDir, fmt.Sprintf("test_file_%d", i))
+		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0600); err != nil {
 			t.Fatalf("ioutil.WriteFile: %v", err)
 		}
 
-		file = filepath.Join(dir2, fmt.Sprintf("test_file_%d", i))
-		if err := ioutil.WriteFile(file, []byte(":octopus:"), 0644); err != nil {
+		file = filepath.Join(subDir, fmt.Sprintf("test_file_%d", i))
+		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0600); err != nil {
 			t.Fatalf("ioutil.WriteFile: %v", err)
 		}
 
-		file = filepath.Join(dir2, fmt.Sprintf("test_file_%d.swp", i))
-		if err := ioutil.WriteFile(file, []byte(":octopus:"), 0644); err != nil {
+		file = filepath.Join(subDir, fmt.Sprintf("test_file_%d.swp", i))
+		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0600); err != nil {
 			t.Fatalf("ioutil.WriteFile: %v", err)
 		}
 
 		expectedFilesCount += 2
 	}
 
-	ignoredExtensions := []string{".swp"}
-	files, directories, err := GetAllInDirectory(dir1, ignoredExtensions)
+	files, directories, err := GetAllInDirectory(baseDir, ignoredExtensions)
 	if err != nil {
 		t.Fatalf("GetAllInDirectory: %v", err)
 	}
@@ -72,77 +72,52 @@ func TestGetAllInDirectory(t *testing.T) {
 	})
 }
 
+type mockWatchFuncProvider struct {
+	hasBeenCalled bool
+}
+
+func (m *mockWatchFuncProvider) WatchFn(path string) error {
+	m.hasBeenCalled = true
+	return nil
+}
+
 func TestWatchDirectories(t *testing.T) {
-	dir1, err := ioutil.TempDir("", "watcher_test1")
-	if err != nil {
-		t.Fatalf("ioutil.TempDir: %v", err)
-	}
-	defer os.RemoveAll(dir1)
+	mockWatchFuncProvider := &mockWatchFuncProvider{}
 
-	dir2, err := ioutil.TempDir(dir1, "watcher_test2")
+	baseDir, err := ioutil.TempDir("", "watcher_test1")
 	if err != nil {
 		t.Fatalf("ioutil.TempDir: %v", err)
 	}
 
-	file := filepath.Join(dir1, "test_file")
-	if err := ioutil.WriteFile(file, []byte(":octopus:"), 0644); err != nil {
+	defer os.RemoveAll(baseDir)
+
+	file := filepath.Join(baseDir, "test_file")
+	if err = ioutil.WriteFile(file, []byte(":octopus:"), 0600); err != nil {
 		t.Fatalf("ioutil.WriteFile: %v", err)
 	}
 
-	file = filepath.Join(dir2, "test_file")
-	if err := ioutil.WriteFile(file, []byte(":octopus:"), 0644); err != nil {
-		t.Fatalf("ioutil.WriteFile: %v", err)
-	}
-
-	ignoredExtensions := []string{".swp"}
-	files, directories, err := GetAllInDirectory(dir1, ignoredExtensions)
+	files, directories, err := GetAllInDirectory(baseDir, []string{".swp"})
 	if err != nil {
 		t.Fatalf("GetAllInDirectory: %v", err)
 	}
 
-	dummyURL := "http://dummy.restapiexample.com/api/v1/create"
-	differential, err := NewDifferential(files, http.DefaultClient, dummyURL, "2137")
-	if err != nil {
-		t.Fatalf("NewDifferential: %v", err)
+	done := make(chan struct{})
+
+	go func() {
+		time.Sleep(1 * time.Second)
+
+		if err := ioutil.WriteFile(files[0], []byte(":octopus: - :octopus:"), 0600); err != nil {
+			t.Logf("ioutil.WriteFile: %v", err)
+		}
+
+		close(done)
+	}()
+
+	if err := WatchDirectories(directories, mockWatchFuncProvider, done); err != nil {
+		t.Fatalf("WatchDirectories: %v", err)
 	}
 
-	t.Run("Files in base directory", func(t *testing.T) {
-		done := make(chan struct{})
-		expected := ":octopus: - :octopus:"
-
-		go func() {
-			time.Sleep(1 * time.Second)
-			if err := ioutil.WriteFile(files[0], []byte(expected), 0644); err != nil {
-				t.Fatalf("ioutil.WriteFile: %v", err)
-			}
-			close(done)
-		}()
-
-		if err := WatchDirectories(directories, differential, done); err != nil {
-			t.Fatalf("WatchDirectories: %v", err)
-		}
-
-		assert.Equal(t, []byte(expected), differential.previousContents[files[0]])
-	})
-
-	t.Run("Files in sub-directory", func(t *testing.T) {
-		done := make(chan struct{})
-		expected := ":octopus: - :octopus:"
-
-		go func() {
-			time.Sleep(1 * time.Second)
-			if err := ioutil.WriteFile(files[1], []byte(expected), 0644); err != nil {
-				t.Fatalf("ioutil.WriteFile: %v", err)
-			}
-			close(done)
-		}()
-
-		if err := WatchDirectories(directories, differential, done); err != nil {
-			t.Fatalf("WatchDirectories: %v", err)
-		}
-
-		assert.Equal(t, []byte(expected), differential.previousContents[files[1]])
-	})
+	assert.Equal(t, true, mockWatchFuncProvider.hasBeenCalled)
 }
 
 func TestNewDifferential(t *testing.T) {
