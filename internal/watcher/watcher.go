@@ -17,13 +17,19 @@ import (
 )
 
 // GetAllInDirectory recursively returns all paths to files and directories in
-// dir. It returns nil, nil, <err> on the first error encountered.
-func GetAllInDirectory(dir string) ([]string, []string, error) {
+// dir(excluding files with ignored extensions). It returns nil, nil, <err> on the first error encountered.
+func GetAllInDirectory(dir string, ignoredExtensions []string) ([]string, []string, error) {
 	var files, directories []string
 
 	walkFn := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
+		}
+
+		for _, e := range ignoredExtensions {
+			if filepath.Ext(path) == e {
+				return nil
+			}
 		}
 
 		if info.IsDir() {
@@ -93,11 +99,10 @@ func WatchDirectories(
 // Differential implements WatchFuncProvider. Use NewDifferential to initialize
 // Differential.
 type Differential struct {
-	ignoredExtensions map[string]struct{}
-	previousChecksum  map[string][16]byte
-	previousContents  map[string][]byte
-	client            *http.Client
-	url, token        string
+	previousChecksum map[string][16]byte
+	previousContents map[string][]byte
+	client           *http.Client
+	url, token       string
 }
 
 type Change struct {
@@ -149,10 +154,6 @@ func (d Differential) sendDiff(path string, diff string) error {
 }
 
 func (d Differential) WatchFn(path string) error {
-	if _, ok := d.ignoredExtensions[filepath.Ext(path)]; ok {
-		return nil
-	}
-
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("ioutil.ReadFile: %w", err)
@@ -178,19 +179,9 @@ func (d Differential) WatchFn(path string) error {
 	return nil
 }
 
-func getIgnoredExtensions(extensions []string) map[string]struct{} {
-	lookup := make(map[string]struct{})
-
-	for _, e := range extensions {
-		lookup[e] = struct{}{}
-	}
-
-	return lookup
-}
-
 // NewDifferential returns initialized Differential.
 func NewDifferential(
-	ignoredExtensions, initialFilePaths []string,
+	initialFilePaths []string,
 	httpClient *http.Client,
 	url, token string) (Differential, error) {
 	previousChecksum := make(map[string][16]byte)
@@ -207,11 +198,10 @@ func NewDifferential(
 	}
 
 	return Differential{
-		ignoredExtensions: getIgnoredExtensions(ignoredExtensions),
-		previousChecksum:  previousChecksum,
-		previousContents:  previousContents,
-		client:            httpClient,
-		url:               url,
-		token:             token,
+		previousChecksum: previousChecksum,
+		previousContents: previousContents,
+		client:           httpClient,
+		url:              url,
+		token:            token,
 	}, nil
 }
