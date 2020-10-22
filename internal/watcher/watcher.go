@@ -16,20 +16,31 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func getIgnoredExtensions(extensions []string) map[string]struct{} {
+	lookup := make(map[string]struct{})
+
+	for _, e := range extensions {
+		lookup[e] = struct{}{}
+	}
+
+	return lookup
+}
+
 // GetAllInDirectory recursively returns all paths to files and directories in
-// dir(excluding files with ignored extensions). It returns nil, nil, <err> on the first error encountered.
+// dir (excluding files with ignored extensions). It returns nil, nil, <err> on
+// the first error encountered.
 func GetAllInDirectory(dir string, ignoredExtensions []string) ([]string, []string, error) {
 	var files, directories []string
+
+	ignoredExtensionsMap := getIgnoredExtensions(ignoredExtensions)
 
 	walkFn := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		for _, e := range ignoredExtensions {
-			if filepath.Ext(path) == e {
-				return nil
-			}
+		if _, ok := ignoredExtensionsMap[filepath.Ext(path)]; ok {
+			return nil
 		}
 
 		if info.IsDir() {

@@ -12,9 +12,14 @@ import (
 )
 
 func TestGetAllInDirectory(t *testing.T) {
-	expectedDirCount := 2
-	expectedFilesCount := 0
+	const (
+		filesMultiplier    = 10
+		expectedDirCount   = 2
+		expectedFilesCount = 2 * filesMultiplier
+	)
+
 	ignoredExtensions := []string{".swp"}
+	ignoredExtensionsMap := getIgnoredExtensions(ignoredExtensions)
 
 	baseDir, err := ioutil.TempDir("", "watcher_test1")
 	if err != nil {
@@ -28,23 +33,21 @@ func TestGetAllInDirectory(t *testing.T) {
 		t.Fatalf("ioutil.TempDir: %v", err)
 	}
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < filesMultiplier; i++ {
 		file := filepath.Join(baseDir, fmt.Sprintf("test_file_%d", i))
-		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0600); err != nil {
+		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0666); err != nil {
 			t.Fatalf("ioutil.WriteFile: %v", err)
 		}
 
 		file = filepath.Join(subDir, fmt.Sprintf("test_file_%d", i))
-		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0600); err != nil {
+		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0666); err != nil {
 			t.Fatalf("ioutil.WriteFile: %v", err)
 		}
 
 		file = filepath.Join(subDir, fmt.Sprintf("test_file_%d.swp", i))
-		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0600); err != nil {
+		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0666); err != nil {
 			t.Fatalf("ioutil.WriteFile: %v", err)
 		}
-
-		expectedFilesCount += 2
 	}
 
 	files, directories, err := GetAllInDirectory(baseDir, ignoredExtensions)
@@ -62,22 +65,20 @@ func TestGetAllInDirectory(t *testing.T) {
 
 	t.Run("Ignored extensions", func(t *testing.T) {
 		for _, f := range files {
-			for _, e := range ignoredExtensions {
-				if filepath.Ext(f) == e {
-					assert.Fail(t, "Haven't excluded files with ignored extensions.")
-					return
-				}
+			if _, ok := ignoredExtensionsMap[filepath.Ext(f)]; ok {
+				assert.Fail(t, "Haven't excluded files with ignored extensions.")
+				return
 			}
 		}
 	})
 }
 
 type mockWatchFuncProvider struct {
-	hasBeenCalled bool
+	called bool
 }
 
 func (m *mockWatchFuncProvider) WatchFn(path string) error {
-	m.hasBeenCalled = true
+	m.called = true
 	return nil
 }
 
@@ -92,7 +93,7 @@ func TestWatchDirectories(t *testing.T) {
 	defer os.RemoveAll(baseDir)
 
 	file := filepath.Join(baseDir, "test_file")
-	if err = ioutil.WriteFile(file, []byte(":octopus:"), 0600); err != nil {
+	if err = ioutil.WriteFile(file, []byte(":octopus:"), 0666); err != nil {
 		t.Fatalf("ioutil.WriteFile: %v", err)
 	}
 
@@ -104,10 +105,11 @@ func TestWatchDirectories(t *testing.T) {
 	done := make(chan struct{})
 
 	go func() {
-		time.Sleep(1 * time.Second)
-
-		if err := ioutil.WriteFile(files[0], []byte(":octopus: - :octopus:"), 0600); err != nil {
-			t.Logf("ioutil.WriteFile: %v", err)
+		for !mockWatchFuncProvider.called {
+			time.Sleep(100 * time.Millisecond)
+			if err := ioutil.WriteFile(files[0], []byte(":octopus: - :octopus:"), 0666); err != nil {
+				t.Logf("ioutil.WriteFile: %v", err)
+			}
 		}
 
 		close(done)
@@ -117,7 +119,7 @@ func TestWatchDirectories(t *testing.T) {
 		t.Fatalf("WatchDirectories: %v", err)
 	}
 
-	assert.Equal(t, true, mockWatchFuncProvider.hasBeenCalled)
+	assert.Equal(t, true, mockWatchFuncProvider.called)
 }
 
 func TestNewDifferential(t *testing.T) {
