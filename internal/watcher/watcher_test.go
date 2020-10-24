@@ -1,10 +1,13 @@
 package watcher
 
 import (
+	"crypto/md5"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -35,17 +38,17 @@ func TestGetAllInDirectory(t *testing.T) {
 
 	for i := 0; i < filesMultiplier; i++ {
 		file := filepath.Join(baseDir, fmt.Sprintf("test_file_%d", i))
-		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0666); err != nil {
+		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0755); err != nil {
 			t.Fatalf("ioutil.WriteFile: %v", err)
 		}
 
 		file = filepath.Join(subDir, fmt.Sprintf("test_file_%d", i))
-		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0666); err != nil {
+		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0755); err != nil {
 			t.Fatalf("ioutil.WriteFile: %v", err)
 		}
 
 		file = filepath.Join(subDir, fmt.Sprintf("test_file_%d.swp", i))
-		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0666); err != nil {
+		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0755); err != nil {
 			t.Fatalf("ioutil.WriteFile: %v", err)
 		}
 	}
@@ -74,16 +77,22 @@ func TestGetAllInDirectory(t *testing.T) {
 }
 
 type mockWatchFuncProvider struct {
-	called bool
+	called      bool
+	calledMutex *sync.Mutex
 }
 
 func (m *mockWatchFuncProvider) WatchFn(path string) error {
+	m.calledMutex.Lock()
 	m.called = true
+	m.calledMutex.Unlock()
+
 	return nil
 }
 
 func TestWatchDirectories(t *testing.T) {
-	mockWatchFuncProvider := &mockWatchFuncProvider{}
+	mockWatchFuncProvider := &mockWatchFuncProvider{
+		calledMutex: &sync.Mutex{},
+	}
 
 	baseDir, err := ioutil.TempDir("", "watcher_test1")
 	if err != nil {
@@ -93,7 +102,7 @@ func TestWatchDirectories(t *testing.T) {
 	defer os.RemoveAll(baseDir)
 
 	file := filepath.Join(baseDir, "test_file")
-	if err = ioutil.WriteFile(file, []byte(":octopus:"), 0666); err != nil {
+	if err = ioutil.WriteFile(file, []byte(":octopus:"), 0755); err != nil {
 		t.Fatalf("ioutil.WriteFile: %v", err)
 	}
 
@@ -105,10 +114,15 @@ func TestWatchDirectories(t *testing.T) {
 	done := make(chan struct{})
 
 	go func() {
-		for !mockWatchFuncProvider.called {
-			time.Sleep(100 * time.Millisecond)
-			if err := ioutil.WriteFile(files[0], []byte(":octopus: - :octopus:"), 0666); err != nil {
+		for {
+			<-time.After(100 * time.Millisecond)
+
+			if err := ioutil.WriteFile(files[0], []byte(":octopus: - :octopus:"), 0755); err != nil {
 				t.Logf("ioutil.WriteFile: %v", err)
+			}
+
+			if mockWatchFuncProvider.called {
+				break
 			}
 		}
 
@@ -133,6 +147,54 @@ func TestNewDifferential(t *testing.T) {
 		}
 
 		actual, err := NewDifferential([]string{}, nil, "", "")
+		if err != nil {
+			t.Fatalf("NewDifferential: %v", err)
+		}
+
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("Checksum & contents", func(t *testing.T) {
+		previousChecksum := make(map[string][16]byte)
+		previousContents := make(map[string][]byte)
+
+		baseDir, err := ioutil.TempDir("", "watcher_test1")
+		if err != nil {
+			t.Fatalf("ioutil.TempDir: %v", err)
+		}
+
+		defer os.RemoveAll(baseDir)
+
+		var b []byte
+		for i := 0; i < 10; i++ {
+			file := filepath.Join(baseDir, fmt.Sprintf("test_file_%d", i))
+			if err = ioutil.WriteFile(file, []byte(fmt.Sprintf(":octopus:%d", i)), 0755); err != nil {
+				t.Fatalf("ioutil.WriteFile: %v", err)
+			}
+
+			b, err = ioutil.ReadFile(file)
+			if err != nil {
+				t.Fatalf("ioutil.ReadFile: %v", err)
+			}
+
+			previousChecksum[file] = md5.Sum(b)
+			previousContents[file] = b
+		}
+
+		expected := Differential{
+			previousChecksum: previousChecksum,
+			previousContents: previousContents,
+			client:           http.DefaultClient,
+			url:              "dummy",
+			token:            "2137",
+		}
+
+		files, _, err := GetAllInDirectory(baseDir, []string{})
+		if err != nil {
+			t.Fatalf("GetAllInDirectory: %v", err)
+		}
+
+		actual, err := NewDifferential(files, http.DefaultClient, "dummy", "2137")
 		if err != nil {
 			t.Fatalf("NewDifferential: %v", err)
 		}
