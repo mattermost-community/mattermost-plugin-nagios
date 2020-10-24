@@ -1,7 +1,7 @@
 package watcher
 
 import (
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -177,7 +177,7 @@ func TestNewDifferential(t *testing.T) {
 				t.Fatalf("ioutil.ReadFile: %v", err)
 			}
 
-			previousChecksum[file] = md5.Sum(b)
+			previousChecksum[file] = md5.Sum(b) //nolint:gosec
 			previousContents[file] = b
 		}
 
