@@ -32,14 +32,14 @@ func getIgnoredExtensions(extensions []string) map[string]struct{} {
 func GetAllInDirectory(dir string, ignoredExtensions []string) ([]string, []string, error) {
 	var files, directories []string
 
-	ignoredExtensionsMap := getIgnoredExtensions(ignoredExtensions)
+	ignoredExtensionsLookup := getIgnoredExtensions(ignoredExtensions)
 
 	walkFn := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if _, ok := ignoredExtensionsMap[filepath.Ext(path)]; ok {
+		if _, ok := ignoredExtensionsLookup[filepath.Ext(path)]; ok {
 			return nil
 		}
 
@@ -110,10 +110,11 @@ func WatchDirectories(
 // Differential implements WatchFuncProvider. Use NewDifferential to initialize
 // Differential.
 type Differential struct {
-	previousChecksum map[string][16]byte
-	previousContents map[string][]byte
-	client           *http.Client
-	url, token       string
+	ignoredExtensions map[string]struct{}
+	previousChecksum  map[string][16]byte
+	previousContents  map[string][]byte
+	client            *http.Client
+	url, token        string
 }
 
 type Change struct {
@@ -165,6 +166,10 @@ func (d Differential) sendDiff(path string, diff string) error {
 }
 
 func (d Differential) WatchFn(path string) error {
+	if _, ok := d.ignoredExtensions[filepath.Ext(path)]; ok {
+		return nil
+	}
+
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("ioutil.ReadFile: %w", err)
@@ -192,7 +197,7 @@ func (d Differential) WatchFn(path string) error {
 
 // NewDifferential returns initialized Differential.
 func NewDifferential(
-	initialFilePaths []string,
+	ignoredExtensions, initialFilePaths []string,
 	httpClient *http.Client,
 	url, token string) (Differential, error) {
 	previousChecksum := make(map[string][16]byte)
@@ -209,10 +214,11 @@ func NewDifferential(
 	}
 
 	return Differential{
-		previousChecksum: previousChecksum,
-		previousContents: previousContents,
-		client:           httpClient,
-		url:              url,
-		token:            token,
+		ignoredExtensions: getIgnoredExtensions(ignoredExtensions),
+		previousChecksum:  previousChecksum,
+		previousContents:  previousContents,
+		client:            httpClient,
+		url:               url,
+		token:             token,
 	}, nil
 }

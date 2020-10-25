@@ -22,7 +22,7 @@ func TestGetAllInDirectory(t *testing.T) {
 	)
 
 	ignoredExtensions := []string{".swp"}
-	ignoredExtensionsMap := getIgnoredExtensions(ignoredExtensions)
+	ignoredExtensionsLookup := getIgnoredExtensions(ignoredExtensions)
 
 	baseDir, err := ioutil.TempDir("", "watcher_test1")
 	if err != nil {
@@ -38,6 +38,11 @@ func TestGetAllInDirectory(t *testing.T) {
 
 	for i := 0; i < filesMultiplier; i++ {
 		file := filepath.Join(baseDir, fmt.Sprintf("test_file_%d", i))
+		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0755); err != nil {
+			t.Fatalf("ioutil.WriteFile: %v", err)
+		}
+
+		file = filepath.Join(baseDir, fmt.Sprintf("test_file_%d.swp", i))
 		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0755); err != nil {
 			t.Fatalf("ioutil.WriteFile: %v", err)
 		}
@@ -68,7 +73,7 @@ func TestGetAllInDirectory(t *testing.T) {
 
 	t.Run("Ignored extensions", func(t *testing.T) {
 		for _, f := range files {
-			if _, ok := ignoredExtensionsMap[filepath.Ext(f)]; ok {
+			if _, ok := ignoredExtensionsLookup[filepath.Ext(f)]; ok {
 				assert.Fail(t, "Haven't excluded files with ignored extensions.")
 				return
 			}
@@ -78,7 +83,7 @@ func TestGetAllInDirectory(t *testing.T) {
 
 type mockWatchFuncProvider struct {
 	called      bool
-	calledMutex *sync.Mutex
+	calledMutex sync.Mutex
 }
 
 func (m *mockWatchFuncProvider) WatchFn(path string) error {
@@ -90,9 +95,7 @@ func (m *mockWatchFuncProvider) WatchFn(path string) error {
 }
 
 func TestWatchDirectories(t *testing.T) {
-	mockWatchFuncProvider := &mockWatchFuncProvider{
-		calledMutex: &sync.Mutex{},
-	}
+	mock := &mockWatchFuncProvider{}
 
 	baseDir, err := ioutil.TempDir("", "watcher_test1")
 	if err != nil {
@@ -106,7 +109,7 @@ func TestWatchDirectories(t *testing.T) {
 		t.Fatalf("ioutil.WriteFile: %v", err)
 	}
 
-	files, directories, err := GetAllInDirectory(baseDir, []string{".swp"})
+	_, directories, err := GetAllInDirectory(baseDir, []string{".swp"})
 	if err != nil {
 		t.Fatalf("GetAllInDirectory: %v", err)
 	}
@@ -115,38 +118,42 @@ func TestWatchDirectories(t *testing.T) {
 
 	go func() {
 		for {
-			<-time.After(100 * time.Millisecond)
-
-			if err := ioutil.WriteFile(files[0], []byte(":octopus: - :octopus:"), 0755); err != nil {
-				t.Logf("ioutil.WriteFile: %v", err)
-			}
-
-			if mockWatchFuncProvider.called {
+			mock.calledMutex.Lock()
+			if mock.called {
+				mock.calledMutex.Unlock()
 				break
 			}
+			mock.calledMutex.Unlock()
+
+			if err := ioutil.WriteFile(file, []byte(":octopus: - :octopus:"), 0755); err != nil {
+				t.Errorf("ioutil.WriteFile: %v", err)
+			}
+
+			<-time.After(100 * time.Millisecond)
 		}
 
 		close(done)
 	}()
 
-	if err := WatchDirectories(directories, mockWatchFuncProvider, done); err != nil {
+	if err := WatchDirectories(directories, mock, done); err != nil {
 		t.Fatalf("WatchDirectories: %v", err)
 	}
 
-	assert.Equal(t, true, mockWatchFuncProvider.called)
+	assert.Equal(t, true, mock.called)
 }
 
 func TestNewDifferential(t *testing.T) {
 	t.Run("Empty struct", func(t *testing.T) {
 		expected := Differential{
-			previousChecksum: make(map[string][16]byte),
-			previousContents: make(map[string][]byte),
-			client:           nil,
-			url:              "",
-			token:            "",
+			ignoredExtensions: getIgnoredExtensions(nil),
+			previousChecksum:  make(map[string][16]byte),
+			previousContents:  make(map[string][]byte),
+			client:            nil,
+			url:               "",
+			token:             "",
 		}
 
-		actual, err := NewDifferential([]string{}, nil, "", "")
+		actual, err := NewDifferential(nil, nil, nil, "", "")
 		if err != nil {
 			t.Fatalf("NewDifferential: %v", err)
 		}
@@ -165,13 +172,13 @@ func TestNewDifferential(t *testing.T) {
 
 		defer os.RemoveAll(baseDir)
 
-		var b []byte
 		for i := 0; i < 10; i++ {
 			file := filepath.Join(baseDir, fmt.Sprintf("test_file_%d", i))
 			if err = ioutil.WriteFile(file, []byte(fmt.Sprintf(":octopus:%d", i)), 0755); err != nil {
 				t.Fatalf("ioutil.WriteFile: %v", err)
 			}
 
+			var b []byte
 			b, err = ioutil.ReadFile(file)
 			if err != nil {
 				t.Fatalf("ioutil.ReadFile: %v", err)
@@ -182,11 +189,12 @@ func TestNewDifferential(t *testing.T) {
 		}
 
 		expected := Differential{
-			previousChecksum: previousChecksum,
-			previousContents: previousContents,
-			client:           http.DefaultClient,
-			url:              "dummy",
-			token:            "2137",
+			ignoredExtensions: getIgnoredExtensions([]string{".swp"}),
+			previousChecksum:  previousChecksum,
+			previousContents:  previousContents,
+			client:            http.DefaultClient,
+			url:               "dummy",
+			token:             "2137",
 		}
 
 		files, _, err := GetAllInDirectory(baseDir, []string{})
@@ -194,7 +202,7 @@ func TestNewDifferential(t *testing.T) {
 			t.Fatalf("GetAllInDirectory: %v", err)
 		}
 
-		actual, err := NewDifferential(files, http.DefaultClient, "dummy", "2137")
+		actual, err := NewDifferential([]string{".swp"}, files, http.DefaultClient, "dummy", "2137")
 		if err != nil {
 			t.Fatalf("NewDifferential: %v", err)
 		}
