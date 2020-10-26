@@ -17,7 +17,7 @@ import (
 func TestGetAllInDirectory(t *testing.T) {
 	const (
 		filesMultiplier    = 10
-		expectedDirCount   = 2
+		expectedDirsCount  = 2
 		expectedFilesCount = 2 * filesMultiplier
 	)
 
@@ -68,7 +68,7 @@ func TestGetAllInDirectory(t *testing.T) {
 	})
 
 	t.Run("Count directories", func(t *testing.T) {
-		assert.Equal(t, expectedDirCount, len(directories))
+		assert.Equal(t, expectedDirsCount, len(directories))
 	})
 
 	t.Run("Ignored extensions", func(t *testing.T) {
