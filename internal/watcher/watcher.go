@@ -16,14 +16,31 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func getIgnoredExtensions(extensions []string) map[string]struct{} {
+	lookup := make(map[string]struct{})
+
+	for _, e := range extensions {
+		lookup[e] = struct{}{}
+	}
+
+	return lookup
+}
+
 // GetAllInDirectory recursively returns all paths to files and directories in
-// dir. It returns nil, nil, <err> on the first error encountered.
-func GetAllInDirectory(dir string) ([]string, []string, error) {
+// dir (excluding files with ignored extensions). It returns nil, nil, <err> on
+// the first error encountered.
+func GetAllInDirectory(dir string, ignoredExtensions []string) ([]string, []string, error) {
 	var files, directories []string
+
+	ignoredExtensionsLookup := getIgnoredExtensions(ignoredExtensions)
 
 	walkFn := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
+		}
+
+		if _, ok := ignoredExtensionsLookup[filepath.Ext(path)]; ok {
+			return nil
 		}
 
 		if info.IsDir() {
@@ -176,16 +193,6 @@ func (d Differential) WatchFn(path string) error {
 	d.previousContents[path] = contents
 
 	return nil
-}
-
-func getIgnoredExtensions(extensions []string) map[string]struct{} {
-	lookup := make(map[string]struct{})
-
-	for _, e := range extensions {
-		lookup[e] = struct{}{}
-	}
-
-	return lookup
 }
 
 // NewDifferential returns initialized Differential.
