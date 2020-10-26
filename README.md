@@ -33,6 +33,8 @@ A Nagios plugin for Mattermost. Supports Nagios Core >= 4.4.x.
         - [unsubscribe](https://github.com/ulumuri/mattermost-plugin-nagios#unsubscribe)
         - [set-report-frequency](https://github.com/ulumuri/mattermost-plugin-nagios#set-report-frequency)
 - [Contributing](https://github.com/ulumuri/mattermost-plugin-nagios#contributing)
+    - [Developing the watcher](https://github.com/ulumuri/mattermost-plugin-nagios#developing-the-watcher)
+    - [Reporting security vulnerabilities](https://github.com/ulumuri/mattermost-plugin-nagios#reporting-security-vulnerabilities)
 
 ## About
 
@@ -231,3 +233,18 @@ Example: `/nagios set-report-frequency 60`
 This repository uses the [mattermost-plugin-starter-template](https://github.com/mattermost/mattermost-plugin-starter-template).
 Therefore, developing this plugin is roughly the same as it is with every plugin using the template.
 All the necessary steps to develop are in the template's repository.
+
+### Developing the watcher
+
+To build the watcher, you can use the following command:
+
+```shell script
+env GOOS=linux GOARCH=amd64 go build -o dist/watcherX.Y.Z.linux-amd64 -a -v cmd/watcher/main.go
+```
+
+Of course, you can build the watcher for other operating systems and architectures too.
+
+### Reporting security vulnerabilities
+
+You can report security vulnerabilities to @amwolff or @danielsz50 at the [Community Server](https://community.mattermost.com/).
+Please adhere to the [Responsible Disclosure Policy](https://mattermost.com/security-vulnerability-report/).
