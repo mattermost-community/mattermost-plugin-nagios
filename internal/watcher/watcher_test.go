@@ -38,22 +38,22 @@ func TestGetAllInDirectory(t *testing.T) {
 
 	for i := 0; i < filesMultiplier; i++ {
 		file := filepath.Join(baseDir, fmt.Sprintf("test_file_%d", i))
-		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0755); err != nil {
+		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0600); err != nil {
 			t.Fatalf("ioutil.WriteFile: %v", err)
 		}
 
 		file = filepath.Join(baseDir, fmt.Sprintf("test_file_%d.swp", i))
-		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0755); err != nil {
+		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0600); err != nil {
 			t.Fatalf("ioutil.WriteFile: %v", err)
 		}
 
 		file = filepath.Join(subDir, fmt.Sprintf("test_file_%d", i))
-		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0755); err != nil {
+		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0600); err != nil {
 			t.Fatalf("ioutil.WriteFile: %v", err)
 		}
 
 		file = filepath.Join(subDir, fmt.Sprintf("test_file_%d.swp", i))
-		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0755); err != nil {
+		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0600); err != nil {
 			t.Fatalf("ioutil.WriteFile: %v", err)
 		}
 	}
@@ -105,7 +105,7 @@ func TestWatchDirectories(t *testing.T) {
 	defer os.RemoveAll(baseDir)
 
 	file := filepath.Join(baseDir, "test_file")
-	if err = ioutil.WriteFile(file, []byte(":octopus:"), 0755); err != nil {
+	if err = ioutil.WriteFile(file, []byte(":octopus:"), 0600); err != nil {
 		t.Fatalf("ioutil.WriteFile: %v", err)
 	}
 
@@ -125,7 +125,7 @@ func TestWatchDirectories(t *testing.T) {
 			}
 			mock.calledMutex.Unlock()
 
-			if err := ioutil.WriteFile(file, []byte(":octopus: - :octopus:"), 0755); err != nil {
+			if err := ioutil.WriteFile(file, []byte(":octopus: - :octopus:"), 0600); err != nil {
 				t.Errorf("ioutil.WriteFile: %v", err)
 			}
 
@@ -174,7 +174,7 @@ func TestNewDifferential(t *testing.T) {
 
 		for i := 0; i < 10; i++ {
 			file := filepath.Join(baseDir, fmt.Sprintf("test_file_%d", i))
-			if err = ioutil.WriteFile(file, []byte(fmt.Sprintf(":octopus:%d", i)), 0755); err != nil {
+			if err = ioutil.WriteFile(file, []byte(fmt.Sprintf(":octopus:%d", i)), 0600); err != nil {
 				t.Fatalf("ioutil.WriteFile: %v", err)
 			}
 
