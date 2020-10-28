@@ -29,7 +29,10 @@ func getIgnoredExtensions(extensions []string) map[string]struct{} {
 // GetAllInDirectory recursively returns all paths to files and directories in
 // dir (excluding files with ignored extensions). It returns nil, nil, <err> on
 // the first error encountered.
-func GetAllInDirectory(dir string, ignoredExtensions []string) ([]string, []string, error) {
+func GetAllInDirectory(dir string, ignoredExtensions []string) (
+	[]string,
+	[]string,
+	error) {
 	var files, directories []string
 
 	ignoredExtensionsLookup := getIgnoredExtensions(ignoredExtensions)

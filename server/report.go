@@ -377,7 +377,7 @@ func (p *Plugin) monitoringReportLoop() {
 			continue
 		}
 
-		p.API.LogDebug("Acquired lock", "id", p.API.GetDiagnosticId())
+		p.API.LogDebug("monitoringReportLoop: acquired lock", "id", p.API.GetDiagnosticId())
 
 		c, err := getReportChannel(p.API)
 		if err != nil {
@@ -386,6 +386,7 @@ func (p *Plugin) monitoringReportLoop() {
 		}
 
 		if c == "" { // fast path, there is no subscription.
+			p.API.LogDebug("monitoringReportLoop: no subscription")
 			continue
 		}
 

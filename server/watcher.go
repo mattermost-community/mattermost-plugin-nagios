@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
@@ -20,8 +19,7 @@ func formatChange(change watcher.Change) string {
 
 	b.WriteString("```diff\n")
 
-	// TODO(amwolff): update the threshold (it's lower now).
-	if utf8.RuneCountInString(change.Diff) > 16077 {
+	if len(change.Diff)+b.Len()+3 > model.POST_MESSAGE_MAX_BYTES_V2 {
 		b.WriteString("File has been changed, but the diff is too long.")
 	} else {
 		b.WriteString(change.Diff)

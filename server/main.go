@@ -13,7 +13,6 @@ func main() {
 			setReportFrequencyKey: setReportFrequency,
 			subscribeKey:          subscribe,
 			unsubscribeKey:        unsubscribe,
-			// TODO: add `help`?
 		},
 	})
 }
