@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
@@ -20,9 +19,8 @@ func formatChange(change watcher.Change) string {
 
 	b.WriteString("```diff\n")
 
-	// TODO(amwolff): update the threshold (it's lower now).
-	if utf8.RuneCountInString(change.Diff) > 16077 {
-		b.WriteString("File has been changed, but the diff is too long.")
+	if len(change.Diff)+b.Len()+3 > model.POST_MESSAGE_MAX_RUNES_V1*4 {
+		b.WriteString("File has been changed, but the diff is too long.\n")
 	} else {
 		b.WriteString(change.Diff)
 	}
@@ -48,7 +46,7 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 	}
 
 	if token != r.Header.Get(watcher.TokenHeader) {
-		p.API.LogWarn("Changes handler called, but authentication failed")
+		p.API.LogWarn("Changes handler called, but authentication failed", "ctx", c)
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 
 		return

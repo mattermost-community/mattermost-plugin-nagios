@@ -21,14 +21,14 @@ func main() {
 	flag.Parse()
 
 	baseDir := *dir
-	ignoredExtensions := []string{".swp"}
 
 	if !filepath.IsAbs(baseDir) {
 		log.Fatal("dir argument must be an absolute path, like /usr/local/nagios/etc/")
 	}
 
-	files, directories, err := watcher.GetAllInDirectory(baseDir, ignoredExtensions)
+	ignoredExtensions := []string{".swp"}
 
+	files, directories, err := watcher.GetAllInDirectory(baseDir, ignoredExtensions)
 	if err != nil {
 		log.Fatalf("GetAllInDirectory: %v", err)
 	}
@@ -37,6 +37,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("NewDifferential: %v", err)
 	}
+
+	log.Printf("Initialized Differential watcher with %d files and %d directories", len(files), len(directories))
 
 	done := make(chan struct{})
 

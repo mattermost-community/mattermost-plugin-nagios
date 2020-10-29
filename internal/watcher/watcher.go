@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/google/go-cmp/cmp"
@@ -29,7 +30,10 @@ func getIgnoredExtensions(extensions []string) map[string]struct{} {
 // GetAllInDirectory recursively returns all paths to files and directories in
 // dir (excluding files with ignored extensions). It returns nil, nil, <err> on
 // the first error encountered.
-func GetAllInDirectory(dir string, ignoredExtensions []string) ([]string, []string, error) {
+func GetAllInDirectory(dir string, ignoredExtensions []string) (
+	[]string,
+	[]string,
+	error) {
 	var files, directories []string
 
 	ignoredExtensionsLookup := getIgnoredExtensions(ignoredExtensions)
@@ -169,6 +173,11 @@ func (d Differential) WatchFn(path string) error {
 	if _, ok := d.ignoredExtensions[filepath.Ext(path)]; ok {
 		return nil
 	}
+
+	// This is to allow for changes to propagate on the filesystem. If the file
+	// is large, the write won't be atomic. It will happen in, for example, 4096
+	// bytes chunks. 1 ms should be enough.
+	time.Sleep(time.Millisecond)
 
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {

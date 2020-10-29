@@ -2,7 +2,6 @@ package watcher
 
 import (
 	"crypto/md5" //nolint:gosec
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -24,37 +23,33 @@ func TestGetAllInDirectory(t *testing.T) {
 	ignoredExtensions := []string{".swp"}
 	ignoredExtensionsLookup := getIgnoredExtensions(ignoredExtensions)
 
-	baseDir, err := ioutil.TempDir("", "watcher_test1")
+	baseDir, err := ioutil.TempDir("", "watcher_test_*")
 	if err != nil {
 		t.Fatalf("ioutil.TempDir: %v", err)
 	}
 
 	defer os.RemoveAll(baseDir)
 
-	subDir, err := ioutil.TempDir(baseDir, "watcher_test2")
+	subDir, err := ioutil.TempDir(baseDir, "watcher_test_*")
 	if err != nil {
 		t.Fatalf("ioutil.TempDir: %v", err)
 	}
 
 	for i := 0; i < filesMultiplier; i++ {
-		file := filepath.Join(baseDir, fmt.Sprintf("test_file_%d", i))
-		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0600); err != nil {
-			t.Fatalf("ioutil.WriteFile: %v", err)
+		if _, err = ioutil.TempFile(baseDir, "*"); err != nil {
+			t.Fatalf("TempFile: %v", err)
 		}
 
-		file = filepath.Join(baseDir, fmt.Sprintf("test_file_%d.swp", i))
-		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0600); err != nil {
-			t.Fatalf("ioutil.WriteFile: %v", err)
+		if _, err = ioutil.TempFile(baseDir, "*.swp"); err != nil {
+			t.Fatalf("TempFile: %v", err)
 		}
 
-		file = filepath.Join(subDir, fmt.Sprintf("test_file_%d", i))
-		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0600); err != nil {
-			t.Fatalf("ioutil.WriteFile: %v", err)
+		if _, err = ioutil.TempFile(subDir, "*"); err != nil {
+			t.Fatalf("TempFile: %v", err)
 		}
 
-		file = filepath.Join(subDir, fmt.Sprintf("test_file_%d.swp", i))
-		if err = ioutil.WriteFile(file, []byte(":octopus:"), 0600); err != nil {
-			t.Fatalf("ioutil.WriteFile: %v", err)
+		if _, err = ioutil.TempFile(subDir, "*.swp"); err != nil {
+			t.Fatalf("TempFile: %v", err)
 		}
 	}
 
@@ -82,14 +77,15 @@ func TestGetAllInDirectory(t *testing.T) {
 }
 
 type mockWatchFuncProvider struct {
-	called      bool
-	calledMutex sync.Mutex
+	called    bool
+	calledMtx sync.Mutex
 }
 
-func (m *mockWatchFuncProvider) WatchFn(path string) error {
-	m.calledMutex.Lock()
+func (m *mockWatchFuncProvider) WatchFn(string) error {
+	m.calledMtx.Lock()
+	defer m.calledMtx.Unlock()
+
 	m.called = true
-	m.calledMutex.Unlock()
 
 	return nil
 }
@@ -97,16 +93,16 @@ func (m *mockWatchFuncProvider) WatchFn(path string) error {
 func TestWatchDirectories(t *testing.T) {
 	mock := &mockWatchFuncProvider{}
 
-	baseDir, err := ioutil.TempDir("", "watcher_test1")
+	baseDir, err := ioutil.TempDir("", "watcher_test_*")
 	if err != nil {
 		t.Fatalf("ioutil.TempDir: %v", err)
 	}
 
 	defer os.RemoveAll(baseDir)
 
-	file := filepath.Join(baseDir, "test_file")
-	if err = ioutil.WriteFile(file, []byte(":octopus:"), 0600); err != nil {
-		t.Fatalf("ioutil.WriteFile: %v", err)
+	f, err := ioutil.TempFile(baseDir, "*")
+	if err != nil {
+		t.Fatalf("TempFile: %v", err)
 	}
 
 	_, directories, err := GetAllInDirectory(baseDir, []string{".swp"})
@@ -118,18 +114,18 @@ func TestWatchDirectories(t *testing.T) {
 
 	go func() {
 		for {
-			mock.calledMutex.Lock()
+			mock.calledMtx.Lock()
 			if mock.called {
-				mock.calledMutex.Unlock()
+				mock.calledMtx.Unlock()
 				break
 			}
-			mock.calledMutex.Unlock()
+			mock.calledMtx.Unlock()
 
-			if err := ioutil.WriteFile(file, []byte(":octopus: - :octopus:"), 0600); err != nil {
-				t.Errorf("ioutil.WriteFile: %v", err)
+			if _, err := f.WriteString("test"); err != nil {
+				t.Errorf("WriteString: %v", err)
 			}
 
-			<-time.After(100 * time.Millisecond)
+			<-time.After(100 * time.Millisecond) // constant backoff
 		}
 
 		close(done)
@@ -165,7 +161,7 @@ func TestNewDifferential(t *testing.T) {
 		previousChecksum := make(map[string][16]byte)
 		previousContents := make(map[string][]byte)
 
-		baseDir, err := ioutil.TempDir("", "watcher_test1")
+		baseDir, err := ioutil.TempDir("", "watcher_test_*")
 		if err != nil {
 			t.Fatalf("ioutil.TempDir: %v", err)
 		}
@@ -173,19 +169,26 @@ func TestNewDifferential(t *testing.T) {
 		defer os.RemoveAll(baseDir)
 
 		for i := 0; i < 10; i++ {
-			file := filepath.Join(baseDir, fmt.Sprintf("test_file_%d", i))
-			if err = ioutil.WriteFile(file, []byte(fmt.Sprintf(":octopus:%d", i)), 0600); err != nil {
-				t.Fatalf("ioutil.WriteFile: %v", err)
+			var f *os.File
+
+			f, err = ioutil.TempFile(baseDir, "*")
+			if err != nil {
+				t.Fatalf("TempFile: %v", err)
+			}
+
+			if _, err = f.Write([]byte{byte(i)}); err != nil {
+				t.Fatalf("Write: %v", err)
 			}
 
 			var b []byte
-			b, err = ioutil.ReadFile(file)
+
+			b, err = ioutil.ReadFile(f.Name())
 			if err != nil {
 				t.Fatalf("ioutil.ReadFile: %v", err)
 			}
 
-			previousChecksum[file] = md5.Sum(b) //nolint:gosec
-			previousContents[file] = b
+			previousChecksum[f.Name()] = md5.Sum(b) //nolint:gosec
+			previousContents[f.Name()] = b
 		}
 
 		expected := Differential{
