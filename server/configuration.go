@@ -92,6 +92,8 @@ func (p *Plugin) OnConfigurationChange() error {
 		return errors.Wrap(err, "failed to load plugin configuration")
 	}
 
+	p.setConfiguration(configuration)
+
 	config := p.getConfiguration()
 
 	if err := config.isValid(); err != nil {
@@ -104,8 +106,6 @@ func (p *Plugin) OnConfigurationChange() error {
 	}
 
 	p.client = c
-
-	p.setConfiguration(configuration)
 
 	p.API.LogInfo("Reloaded configuration")
 
