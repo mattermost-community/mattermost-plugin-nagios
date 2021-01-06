@@ -202,7 +202,7 @@ func parseCommandArgs(args *model.CommandArgs) (
 	return command, action, parameters
 }
 
-func (p *Plugin) getCommandResponse(
+func (p *Plugin) sendResponse(
 	args *model.CommandArgs,
 	text string) *model.CommandResponse {
 	p.API.SendEphemeralPost(args.UserId, &model.Post{
@@ -231,5 +231,5 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (
 		msg = fmt.Sprintf("Unknown action (%s).", action)
 	}
 
-	return p.getCommandResponse(args, msg), nil
+	return p.sendResponse(args, msg), nil
 }
