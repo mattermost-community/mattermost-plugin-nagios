@@ -32,29 +32,21 @@ type Plugin struct {
 	commandHandlers map[string]commandHandlerFunc
 }
 
-func (p *Plugin) setDefaultKV(key string, value interface{}) error {
-	b, err := json.Marshal(value)
-	if err != nil {
-		return fmt.Errorf("json.Marshal: %w", err)
+func (p *Plugin) storeInitialKV() error {
+	initials := map[string]int{
+		setLogsLimitKey:       p.getConfiguration().InitialLogsLimit,
+		setLogsStartTimeKey:   p.getConfiguration().InitialLogsStartTime,
+		setReportFrequencyKey: p.getConfiguration().InitialReportFrequency,
 	}
 
-	if err := p.API.KVSet(key, b); err != nil {
-		return fmt.Errorf("p.API.KVSet: %w", err)
-	}
+	for key, val := range initials {
+		b, err := json.Marshal(val)
+		if err != nil {
+			return fmt.Errorf("json.Marshal: %w", err)
+		}
 
-	return nil
-}
-
-var defaultKVStore = map[string]interface{}{
-	setLogsLimitKey:       defaultLogsLimit,
-	setLogsStartTimeKey:   defaultLogsStartTime,
-	setReportFrequencyKey: defaultReportFrequency,
-}
-
-func (p *Plugin) storeDefaultKV() error {
-	for key, val := range defaultKVStore {
-		if err := p.setDefaultKV(key, val); err != nil {
-			return err
+		if err := p.API.KVSet(key, b); err != nil {
+			return fmt.Errorf("p.API.KVSet: %w", err)
 		}
 	}
 
@@ -107,8 +99,8 @@ func (p *Plugin) OnActivate() error {
 		return fmt.Errorf("p.API.RegisterCommand: %w", err)
 	}
 
-	if err := p.storeDefaultKV(); err != nil {
-		return fmt.Errorf("p.storeDefaultKV: %w", err)
+	if err := p.storeInitialKV(); err != nil {
+		return fmt.Errorf("p.storeInitialKV: %w", err)
 	}
 
 	go p.monitoringReportLoop()

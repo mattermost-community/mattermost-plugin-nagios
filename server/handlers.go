@@ -17,10 +17,7 @@ type commandHandlerFunc func(p *Plugin, channelID string, parameters []string) s
 
 const logErrorKey = "error"
 
-const (
-	setLogsLimitKey  = "set-logs-limit"
-	defaultLogsLimit = 50
-)
+const setLogsLimitKey = "set-logs-limit"
 
 func getLogsLimit(api plugin.API) (int, error) {
 	b, err := api.KVGet(setLogsLimitKey)
@@ -72,10 +69,7 @@ func setLogsLimit(p *Plugin, channelID string, parameters []string) string {
 	return p.setLogsLimit(parameters)
 }
 
-const (
-	setLogsStartTimeKey  = "set-logs-start-time"
-	defaultLogsStartTime = 86400 // seconds, get logs from one day
-)
+const setLogsStartTimeKey = "set-logs-start-time"
 
 func getLogsStartTime(api plugin.API) (time.Duration, error) {
 	b, err := api.KVGet(setLogsStartTimeKey)
@@ -339,10 +333,7 @@ func getLogs(p *Plugin, channelID string, parameters []string) string {
 	return p.getLogs(parameters)
 }
 
-const (
-	setReportFrequencyKey  = "set-report-frequency"
-	defaultReportFrequency = 1 // minutes
-)
+const setReportFrequencyKey = "set-report-frequency"
 
 func getReportFrequency(api plugin.API) (time.Duration, error) {
 	b, err := api.KVGet(setReportFrequencyKey)

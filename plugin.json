@@ -30,6 +30,30 @@
                 "display_name": "Token",
                 "type": "generated",
                 "help_text": "The token for the configuration files watcher."
+            },
+            {
+                "key": "InitialLogsLimit",
+                "display_name": "Initial logs limit",
+                "type": "number",
+                "help_text": "Limit the initial number of logs the get-logs action fetches.",
+                "placeholder": "Integer",
+                "default": 50
+            },
+            {
+                "key": "InitialLogsStartTime",
+                "display_name": "Initial logs start time",
+                "type": "number",
+                "help_text": "Specify the initial age of the oldest log the get-logs action fetches.",
+                "placeholder": "Seconds",
+                "default": 86400
+            },
+            {
+                "key": "InitialReportFrequency",
+                "display_name": "Initial report frequency",
+                "type": "number",
+                "help_text": "Set the initial frequency of system monitoring reports.",
+                "placeholder": "Minutes",
+                "default": 1
             }
         ]
     }
