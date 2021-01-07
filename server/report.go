@@ -40,28 +40,28 @@ func formatHostCount(count nagios.HostCount) string {
 	return b.String()
 }
 
-type extractedHost struct {
+type extractedObject struct {
 	name, state string
 }
 
-type extractedHosts []extractedHost
+type extractedObjects []extractedObject
 
-func (e extractedHosts) Len() int {
+func (e extractedObjects) Len() int {
 	return len(e)
 }
 
-func (e extractedHosts) Less(i, j int) bool {
+func (e extractedObjects) Less(i, j int) bool {
 	return e[i].name < e[j].name
 }
 
-func (e extractedHosts) Swap(i, j int) {
+func (e extractedObjects) Swap(i, j int) {
 	e[i], e[j] = e[j], e[i]
 }
 
-// extractHosts returns extractedHosts, extracted from hostListData. It returns
-// unknownState state for every host it failed to extract the state.
-func extractHosts(hostListData nagios.HostListData) extractedHosts {
-	var hosts extractedHosts
+// extractHosts returns extractedObjects, extracted from hostListData. It
+// returns unknownState state for every host it failed to extract the state.
+func extractHosts(hostListData nagios.HostListData) extractedObjects {
+	var hosts extractedObjects
 
 	for k, v := range hostListData.HostList {
 		var state string
@@ -70,7 +70,7 @@ func extractHosts(hostListData nagios.HostListData) extractedHosts {
 			state = unknownState
 		}
 
-		hosts = append(hosts, extractedHost{name: k, state: state})
+		hosts = append(hosts, extractedObject{name: k, state: state})
 	}
 
 	return hosts
@@ -141,35 +141,17 @@ func formatServiceCount(count nagios.ServiceCount) string {
 	return b.String()
 }
 
-type extractedService struct {
-	name, state string
-}
-
-type extractedServices []extractedService
-
-func (e extractedServices) Len() int {
-	return len(e)
-}
-
-func (e extractedServices) Less(i, j int) bool {
-	return e[i].name < e[j].name
-}
-
-func (e extractedServices) Swap(i, j int) {
-	e[i], e[j] = e[j], e[i]
-}
-
-// extractServices returns extractedServices, extracted from rawMessage. It will
+// extractServices returns extractedObjects, extracted from rawMessage. It will
 // return a single-element slice initialized to unknownState state if it fails
 // to process rawMessage.
-func extractServices(rawMessage json.RawMessage) extractedServices {
+func extractServices(rawMessage json.RawMessage) extractedObjects {
 	var rawStates map[string]json.RawMessage
 
 	if err := json.Unmarshal(rawMessage, &rawStates); err != nil {
-		return extractedServices{{state: unknownState}}
+		return extractedObjects{{state: unknownState}}
 	}
 
-	var services extractedServices
+	var services extractedObjects
 
 	for k, v := range rawStates {
 		var state string
@@ -178,7 +160,7 @@ func extractServices(rawMessage json.RawMessage) extractedServices {
 			state = unknownState
 		}
 
-		services = append(services, extractedService{name: k, state: state})
+		services = append(services, extractedObject{name: k, state: state})
 	}
 
 	return services
@@ -194,7 +176,7 @@ func formatServiceList(list nagios.ServiceList) string {
 		hosts        []string
 	)
 
-	hostToServices := make(map[string]extractedServices)
+	hostToServices := make(map[string]extractedObjects)
 
 	for k, v := range list.Data.ServiceList {
 		services := extractServices(v)
