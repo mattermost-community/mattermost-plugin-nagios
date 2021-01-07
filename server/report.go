@@ -268,14 +268,23 @@ func formatServiceList(list nagios.ServiceList) string {
 }
 
 func (p *Plugin) sendMessages(channelID string, messages ...string) error {
-	for _, m := range messages {
+	var firstID string
+
+	for i, m := range messages {
 		post := &model.Post{
 			UserId:    p.botUserID,
 			ChannelId: channelID,
+			RootId:    firstID,
 			Message:   m,
 		}
-		if _, err := p.API.CreatePost(post); err != nil {
+
+		created, err := p.API.CreatePost(post)
+		if err != nil {
 			return fmt.Errorf("p.API.CreatePost: %w", err)
+		}
+
+		if i == 0 {
+			firstID = created.Id
 		}
 	}
 
