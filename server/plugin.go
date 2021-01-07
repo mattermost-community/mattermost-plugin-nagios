@@ -99,10 +99,6 @@ func (p *Plugin) OnActivate() error {
 		return fmt.Errorf("p.API.RegisterCommand: %w", err)
 	}
 
-	if err := p.storeInitialKV(); err != nil {
-		return fmt.Errorf("p.storeInitialKV: %w", err)
-	}
-
 	go p.monitoringReportLoop()
 
 	return nil

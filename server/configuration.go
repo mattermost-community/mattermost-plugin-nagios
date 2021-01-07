@@ -126,6 +126,10 @@ func (p *Plugin) OnConfigurationChange() error {
 
 	p.client = c
 
+	if err := p.storeInitialKV(); err != nil {
+		return fmt.Errorf("p.storeInitialKV: %w", err)
+	}
+
 	p.API.LogInfo("Reloaded configuration")
 
 	return nil
