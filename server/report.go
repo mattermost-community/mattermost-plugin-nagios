@@ -100,7 +100,7 @@ func (p *Plugin) sendMonitoringReport(channelID string) error {
 
 const reportLockKey = "report-lock"
 
-var reportLock = make([]byte, 0)
+var reportLock = []byte{0} // Could be anything. Must be non-empty.
 
 func (p *Plugin) monitoringReportLoop() {
 	for {
