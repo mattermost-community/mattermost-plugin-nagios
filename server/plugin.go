@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/mattermost/mattermost-plugin-api/cluster"
 	"github.com/mattermost/mattermost-plugin-api/experimental/command"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
@@ -30,6 +31,8 @@ type Plugin struct {
 	botUserID string
 
 	commandHandlers map[string]commandHandlerFunc
+
+	monitoringReportJob *cluster.Job
 }
 
 func (p *Plugin) storeInitialKV() error {
@@ -95,11 +98,24 @@ func (p *Plugin) OnActivate() error {
 		return fmt.Errorf("command.GetIconData: %w", err)
 	}
 
-	if err := p.API.RegisterCommand(p.getCommand(ico)); err != nil {
+	if err = p.API.RegisterCommand(p.getCommand(ico)); err != nil {
 		return fmt.Errorf("p.API.RegisterCommand: %w", err)
 	}
 
-	go p.monitoringReportLoop()
+	j, err := cluster.Schedule(p.API, "monitoring-report", p.NextWaitMonitoringReportInterval, p.monitoringReport)
+	if err != nil {
+		return fmt.Errorf("cluster.Schedule: %w", err)
+	}
+
+	p.monitoringReportJob = j
+
+	return nil
+}
+
+func (p *Plugin) OnDeactivate() error {
+	if err := p.monitoringReportJob.Close(); err != nil {
+		return fmt.Errorf("p.monitoringReportJob.Close: %w", err)
+	}
 
 	return nil
 }

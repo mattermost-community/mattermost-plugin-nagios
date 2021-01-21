@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mattermost/mattermost-plugin-api/cluster"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/ulumuri/go-nagios/nagios"
 )
@@ -98,50 +99,35 @@ func (p *Plugin) sendMonitoringReport(channelID string) error {
 	return nil
 }
 
-const reportLockKey = "report-lock"
+func (p *Plugin) NextWaitMonitoringReportInterval(
+	now time.Time,
+	metadata cluster.JobMetadata) time.Duration {
+	interval, err := getReportFrequency(p.API)
+	if err != nil {
+		p.API.LogError("getReportFrequency", logErrorKey, err)
+		return time.Minute // Return a reasonable interval.
+	}
 
-var reportLock = []byte{0} // Could be anything. Must be non-empty.
+	if since := now.Sub(metadata.LastFinished); interval > since {
+		return interval - since
+	}
 
-func (p *Plugin) monitoringReportLoop() {
-	for {
-		time.Sleep(time.Minute)
+	return 0
+}
 
-		d, err := getReportFrequency(p.API)
-		if err != nil {
-			p.API.LogError("getReportFrequency", logErrorKey, err)
-			continue
-		}
+func (p *Plugin) monitoringReport() {
+	c, err := getReportChannel(p.API)
+	if err != nil {
+		p.API.LogError("getReportChannel", logErrorKey, err)
+		return
+	}
 
-		opts := model.PluginKVSetOptions{
-			Atomic:          true,
-			OldValue:        nil,
-			ExpireInSeconds: int64(d.Seconds()),
-		}
+	if c == "" { // fast path, there is no subscription.
+		p.API.LogDebug("monitoringReport: no subscription")
+		return
+	}
 
-		ok, appErr := p.API.KVSetWithOptions(reportLockKey, reportLock, opts)
-		if !ok {
-			if appErr != nil {
-				p.API.LogError("KVSetWithOptions", logErrorKey, err)
-			}
-
-			continue
-		}
-
-		p.API.LogDebug("monitoringReportLoop: acquired lock", "id", p.API.GetDiagnosticId())
-
-		c, err := getReportChannel(p.API)
-		if err != nil {
-			p.API.LogError("getReportChannel", logErrorKey, err)
-			continue
-		}
-
-		if c == "" { // fast path, there is no subscription.
-			p.API.LogDebug("monitoringReportLoop: no subscription")
-			continue
-		}
-
-		if err := p.sendMonitoringReport(c); err != nil {
-			p.API.LogError("sendMonitoringReport", logErrorKey, err)
-		}
+	if err := p.sendMonitoringReport(c); err != nil {
+		p.API.LogError("sendMonitoringReport", logErrorKey, err)
 	}
 }
