@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/mattermost/mattermost-plugin-api/cluster"
 	"github.com/mattermost/mattermost-plugin-api/experimental/command"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
@@ -30,31 +31,25 @@ type Plugin struct {
 	botUserID string
 
 	commandHandlers map[string]commandHandlerFunc
+
+	monitoringReportJob *cluster.Job
 }
 
-func (p *Plugin) setDefaultKV(key string, value interface{}) error {
-	b, err := json.Marshal(value)
-	if err != nil {
-		return fmt.Errorf("json.Marshal: %w", err)
+func (p *Plugin) storeInitialKV() error {
+	initials := map[string]int{
+		setLogsLimitKey:       p.getConfiguration().InitialLogsLimit,
+		setLogsStartTimeKey:   p.getConfiguration().InitialLogsStartTime,
+		setReportFrequencyKey: p.getConfiguration().InitialReportFrequency,
 	}
 
-	if err := p.API.KVSet(key, b); err != nil {
-		return fmt.Errorf("p.API.KVSet: %w", err)
-	}
+	for key, val := range initials {
+		b, err := json.Marshal(val)
+		if err != nil {
+			return fmt.Errorf("json.Marshal: %w", err)
+		}
 
-	return nil
-}
-
-var defaultKVStore = map[string]interface{}{
-	setLogsLimitKey:       defaultLogsLimit,
-	setLogsStartTimeKey:   defaultLogsStartTime,
-	setReportFrequencyKey: defaultReportFrequency,
-}
-
-func (p *Plugin) storeDefaultKV() error {
-	for key, val := range defaultKVStore {
-		if err := p.setDefaultKV(key, val); err != nil {
-			return err
+		if err := p.API.KVSet(key, b); err != nil {
+			return fmt.Errorf("p.API.KVSet: %w", err)
 		}
 	}
 
@@ -103,15 +98,24 @@ func (p *Plugin) OnActivate() error {
 		return fmt.Errorf("command.GetIconData: %w", err)
 	}
 
-	if err := p.API.RegisterCommand(p.getCommand(ico)); err != nil {
+	if err = p.API.RegisterCommand(p.getCommand(ico)); err != nil {
 		return fmt.Errorf("p.API.RegisterCommand: %w", err)
 	}
 
-	if err := p.storeDefaultKV(); err != nil {
-		return fmt.Errorf("p.storeDefaultKV: %w", err)
+	j, err := cluster.Schedule(p.API, "monitoring-report", p.NextWaitMonitoringReportInterval, p.monitoringReport)
+	if err != nil {
+		return fmt.Errorf("cluster.Schedule: %w", err)
 	}
 
-	go p.monitoringReportLoop()
+	p.monitoringReportJob = j
+
+	return nil
+}
+
+func (p *Plugin) OnDeactivate() error {
+	if err := p.monitoringReportJob.Close(); err != nil {
+		return fmt.Errorf("p.monitoringReportJob.Close: %w", err)
+	}
 
 	return nil
 }

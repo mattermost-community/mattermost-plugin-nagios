@@ -23,25 +23,22 @@ const (
 	warningEmoji              = ":warning:"
 )
 
+var emojiLookup = map[string]string{
+	criticalState:    bangBangEmoji,
+	downState:        smallRedTriangleDownEmoji,
+	okState:          whiteCheckMarkEmoji,
+	pendingState:     hourglassFlowingSandEmoji,
+	unknownState:     questionEmoji,
+	unreachableState: mailboxWithNoMailEmoji,
+	upState:          upEmoji,
+	warningState:     warningEmoji,
+}
+
 func emoji(state string) string {
-	switch state {
-	case criticalState:
-		return bangBangEmoji
-	case downState:
-		return smallRedTriangleDownEmoji
-	case okState:
-		return whiteCheckMarkEmoji
-	case pendingState:
-		return hourglassFlowingSandEmoji
-	case unknownState:
-		return questionEmoji
-	case unreachableState:
-		return mailboxWithNoMailEmoji
-	case upState:
-		return upEmoji
-	case warningState:
-		return warningEmoji
-	default:
+	e, ok := emojiLookup[state]
+	if !ok {
 		return questionEmoji
 	}
+
+	return e
 }

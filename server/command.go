@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -9,19 +10,28 @@ import (
 )
 
 func getAutoCompleteDesc(m map[string]commandHandlerFunc) string {
+	if len(m) == 0 {
+		return ""
+	}
+
+	var keys []string
+
+	for k := range m {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
 	var b strings.Builder
 
 	b.WriteString("Available commands: ")
 
-	var i int
-	for k := range m {
+	for i, k := range keys {
 		if i > 0 {
 			b.WriteString(", ")
 		}
 
 		b.WriteString(k)
-
-		i++
 	}
 
 	return b.String()
@@ -187,7 +197,7 @@ func (p *Plugin) getCommand(iconData string) *model.Command {
 func parseCommandArgs(args *model.CommandArgs) (
 	command, action string,
 	parameters []string) {
-	fields := strings.Fields(args.Command)
+	fields := strings.SplitN(args.Command, " ", 5)
 
 	if len(fields) > 0 {
 		command = fields[0]
@@ -197,12 +207,14 @@ func parseCommandArgs(args *model.CommandArgs) (
 		action = fields[1]
 	}
 
-	parameters = fields[2:]
+	if len(fields) > 2 {
+		parameters = fields[2:]
+	}
 
 	return command, action, parameters
 }
 
-func (p *Plugin) getCommandResponse(
+func (p *Plugin) sendResponse(
 	args *model.CommandArgs,
 	text string) *model.CommandResponse {
 	p.API.SendEphemeralPost(args.UserId, &model.Post{
@@ -231,5 +243,5 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (
 		msg = fmt.Sprintf("Unknown action (%s).", action)
 	}
 
-	return p.getCommandResponse(args, msg), nil
+	return p.sendResponse(args, msg), nil
 }

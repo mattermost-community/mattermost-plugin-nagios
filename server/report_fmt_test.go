@@ -99,7 +99,7 @@ func Test_formatHostCount(t *testing.T) {
 	}
 }
 
-func extractedHostsEqual(a, b extractedHosts) bool {
+func extractedObjectsEqual(a, b extractedObjects) bool {
 	m := make(map[string]string)
 
 	for _, v := range a {
@@ -119,14 +119,14 @@ func Test_extractHosts(t *testing.T) {
 	tests := []struct {
 		name         string
 		hostListData nagios.HostListData
-		want         extractedHosts
+		want         extractedObjects
 	}{
 		{
 			name: "invalid JSON",
 			hostListData: nagios.HostListData{
 				HostList: map[string]json.RawMessage{"test": []byte(`🐙`)},
 			},
-			want: extractedHosts{{name: "test", state: unknownState}},
+			want: extractedObjects{{name: "test", state: unknownState}},
 		},
 		{
 			name: "part of a real response",
@@ -193,7 +193,7 @@ func Test_extractHosts(t *testing.T) {
 					"www.twitter.com":                []byte(`"up"`),
 				},
 			},
-			want: extractedHosts{
+			want: extractedObjects{
 				{
 					name:  "Firewall",
 					state: upState,
@@ -435,7 +435,7 @@ func Test_extractHosts(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := extractHosts(tt.hostListData); !extractedHostsEqual(got, tt.want) {
+			if got := extractHosts(tt.hostListData); !extractedObjectsEqual(got, tt.want) {
 				t.Errorf("extractHosts() = %v, want %v", got, tt.want)
 			}
 		})
@@ -535,32 +535,16 @@ func Test_formatServiceCount(t *testing.T) {
 	}
 }
 
-func extractedServicesEqual(a, b extractedServices) bool {
-	m := make(map[string]string)
-
-	for _, v := range a {
-		m[v.name] = v.state
-	}
-
-	for _, v := range b {
-		if v.state != m[v.name] {
-			return false
-		}
-	}
-
-	return true
-}
-
 func Test_extractServices(t *testing.T) {
 	tests := []struct {
 		name       string
 		rawMessage json.RawMessage
-		want       extractedServices
+		want       extractedObjects
 	}{
 		{
 			name:       "invalid JSON",
 			rawMessage: []byte(`🐙`),
-			want:       extractedServices{{state: unknownState}},
+			want:       extractedObjects{{state: unknownState}},
 		},
 		{
 			name: "part of a real response",
@@ -587,7 +571,7 @@ func Test_extractServices(t *testing.T) {
 				`itical","Port 8 Bandwidth":"ok","Port 8 Status":"critical","` +
 				`Port 9 Bandwidth":"ok","Port 9 Status":"ok","Youtube Usage":` +
 				`"warning"}`),
-			want: extractedServices{
+			want: extractedObjects{
 				{
 					name:  "Bandwidth Spike",
 					state: okState,
@@ -805,7 +789,7 @@ func Test_extractServices(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := extractServices(tt.rawMessage); !extractedServicesEqual(got, tt.want) {
+			if got := extractServices(tt.rawMessage); !extractedObjectsEqual(got, tt.want) {
 				t.Errorf("extractServices() = %v, want %v", got, tt.want)
 			}
 		})
