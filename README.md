@@ -103,7 +103,7 @@ We will be happy to help.
 2. Click *Save* to save the settings
 3. Switch to the machine where Nagios is running (preferably)
     1. Download the latest stable version of the watcher from the [releases page](https://github.com/ulumuri/mattermost-plugin-nagios/releases)
-    2. Move the watcher: `chmod +x watcher1.0.1.linux-amd64 && sudo mv watcher1.0.1.linux-amd64 /usr/local/bin/watcher`
+    2. Move the watcher: `chmod +x watcher1.1.0.linux-amd64 && sudo mv watcher1.1.0.linux-amd64 /usr/local/bin/watcher`
     3. You will most probably want to run the watcher as a systemd service :arrow_down:
 
 #### Running the watcher as a systemd service

@@ -17,9 +17,9 @@ const manifestStr = `
   "description": "Nagios plugin for Mattermost",
   "homepage_url": "https://github.com/ulumuri/mattermost-plugin-nagios",
   "support_url": "https://github.com/ulumuri/mattermost-plugin-nagios/issues",
-  "release_notes_url": "https://github.com/ulumuri/mattermost-plugin-nagios/releases/tag/v1.0.1",
+  "release_notes_url": "https://github.com/ulumuri/mattermost-plugin-nagios/releases/tag/v1.1.0",
   "icon_path": "assets/orbit-467260.svg",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "min_server_version": "5.12.0",
   "server": {
     "executables": {
