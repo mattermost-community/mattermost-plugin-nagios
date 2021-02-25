@@ -15,9 +15,9 @@ const manifestStr = `
   "id": "nagios",
   "name": "Nagios",
   "description": "Nagios plugin for Mattermost",
-  "homepage_url": "https://github.com/ulumuri/mattermost-plugin-nagios",
-  "support_url": "https://github.com/ulumuri/mattermost-plugin-nagios/issues",
-  "release_notes_url": "https://github.com/ulumuri/mattermost-plugin-nagios/releases/tag/v1.1.0",
+  "homepage_url": "https://github.com/mattermost/mattermost-plugin-nagios",
+  "support_url": "https://github.com/mattermost/mattermost-plugin-nagios/issues",
+  "release_notes_url": "https://github.com/mattermost/mattermost-plugin-nagios/releases/tag/v1.1.0",
   "icon_path": "assets/orbit-467260.svg",
   "version": "1.1.0",
   "min_server_version": "5.12.0",
@@ -30,8 +30,8 @@ const manifestStr = `
     "executable": ""
   },
   "settings_schema": {
-    "header": "Having problems configuring the plugin? [Check the configuration guide](https://github.com/ulumuri/mattermost-plugin-nagios/#configuring-the-plugin).",
-    "footer": "To report an issue, make a suggestion or a contribution, or fork your own version of the plugin, [check the repository](https://github.com/ulumuri/mattermost-plugin-nagios).",
+    "header": "Having problems configuring the plugin? [Check the configuration guide](https://github.com/mattermost/mattermost-plugin-nagios/#configuring-the-plugin).",
+    "footer": "To report an issue, make a suggestion or a contribution, or fork your own version of the plugin, [check the repository](https://github.com/mattermost/mattermost-plugin-nagios).",
     "settings": [
       {
         "key": "NagiosURL",

@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"path/filepath"
 
-	"github.com/ulumuri/mattermost-plugin-nagios/internal/watcher"
+	"github.com/mattermost/mattermost-plugin-nagios/internal/watcher"
 )
 
 var (

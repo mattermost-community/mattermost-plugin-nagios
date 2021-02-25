@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/mattermost/mattermost-plugin-nagios/internal/watcher"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
-	"github.com/ulumuri/mattermost-plugin-nagios/internal/watcher"
 )
 
 func formatChange(change watcher.Change) string {
