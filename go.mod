@@ -1,4 +1,4 @@
-module github.com/ulumuri/mattermost-plugin-nagios
+module github.com/mattermost/mattermost-plugin-nagios
 
 go 1.13
 

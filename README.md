@@ -1,4 +1,4 @@
-# Mattermost Nagios Plugin ![Ulumuri Technologies](https://circleci.com/gh/ulumuri/mattermost-plugin-nagios.svg?style=svg)
+# Mattermost Nagios Plugin ![Ulumuri Technologies](https://circleci.com/gh/ulumuri/mattermost-plugin-nagios.svg?style=svg) <!-- TODO: update the CI status link -->
 
 **Maintainers**: [@amwolff](https://github.com/amwolff) & [@DanielSz50](https://github.com/DanielSz50)
 
@@ -6,35 +6,35 @@ A Nagios plugin for Mattermost. Supports Nagios Core >= 4.4.x.
 
 ## Table of contents
 
-- [About](https://github.com/ulumuri/mattermost-plugin-nagios#about)
-    - [Screenshots](https://github.com/ulumuri/mattermost-plugin-nagios#screenshots)
-        - [Getting logs](https://github.com/ulumuri/mattermost-plugin-nagios#getting-logs)
-        - [Receiving system monitoring reports](https://github.com/ulumuri/mattermost-plugin-nagios#receiving-system-monitoring-reports)
-        - [Receiving notifications about changes to the configuration](https://github.com/ulumuri/mattermost-plugin-nagios#receiving-notifications-about-changes-to-the-configuration)
-    - [Audience](https://github.com/ulumuri/mattermost-plugin-nagios#audience)
-    - [Important notice](https://github.com/ulumuri/mattermost-plugin-nagios#important-notice)
-- [Installing the plugin](https://github.com/ulumuri/mattermost-plugin-nagios#installing-the-plugin)
-- [Configuring the plugin](https://github.com/ulumuri/mattermost-plugin-nagios#configuring-the-plugin)
-    - [Configuring the configuration files watcher](https://github.com/ulumuri/mattermost-plugin-nagios#configuring-the-configuration-files-watcher)
-        - [Running the watcher as a systemd service](https://github.com/ulumuri/mattermost-plugin-nagios#running-the-watcher-as-a-systemd-service)
-            - [Preparing the systemd service unit file](https://github.com/ulumuri/mattermost-plugin-nagios#preparing-the-systemd-service-unit-file)
-            - [Starting the watcher](https://github.com/ulumuri/mattermost-plugin-nagios#starting-the-watcher)
-- [Updating the plugin](https://github.com/ulumuri/mattermost-plugin-nagios#updating-the-plugin)
-- [Using the plugin](https://github.com/ulumuri/mattermost-plugin-nagios#using-the-plugin)
-    - [Slash commands overview](https://github.com/ulumuri/mattermost-plugin-nagios#slash-commands-overview)
-    - [Slash commands documentation](https://github.com/ulumuri/mattermost-plugin-nagios#slash-commands-documentation)
-        - [nagios](https://github.com/ulumuri/mattermost-plugin-nagios#nagios)
-            - [get-logs](https://github.com/ulumuri/mattermost-plugin-nagios#get-logs)
-                - [host](https://github.com/ulumuri/mattermost-plugin-nagios#host)
-                - [service](https://github.com/ulumuri/mattermost-plugin-nagios#service)
-        - [set-logs-limit](https://github.com/ulumuri/mattermost-plugin-nagios#set-logs-limit)
-        - [set-logs-start-time](https://github.com/ulumuri/mattermost-plugin-nagios#set-logs-start-time)
-        - [subscribe](https://github.com/ulumuri/mattermost-plugin-nagios#subscribe)
-        - [unsubscribe](https://github.com/ulumuri/mattermost-plugin-nagios#unsubscribe)
-        - [set-report-frequency](https://github.com/ulumuri/mattermost-plugin-nagios#set-report-frequency)
-- [Contributing](https://github.com/ulumuri/mattermost-plugin-nagios#contributing)
-    - [Developing the watcher](https://github.com/ulumuri/mattermost-plugin-nagios#developing-the-watcher)
-    - [Reporting security vulnerabilities](https://github.com/ulumuri/mattermost-plugin-nagios#reporting-security-vulnerabilities)
+- [About](https://github.com/mattermost/mattermost-plugin-nagios#about)
+    - [Screenshots](https://github.com/mattermost/mattermost-plugin-nagios#screenshots)
+        - [Getting logs](https://github.com/mattermost/mattermost-plugin-nagios#getting-logs)
+        - [Receiving system monitoring reports](https://github.com/mattermost/mattermost-plugin-nagios#receiving-system-monitoring-reports)
+        - [Receiving notifications about changes to the configuration](https://github.com/mattermost/mattermost-plugin-nagios#receiving-notifications-about-changes-to-the-configuration)
+    - [Audience](https://github.com/mattermost/mattermost-plugin-nagios#audience)
+    - [Important notice](https://github.com/mattermost/mattermost-plugin-nagios#important-notice)
+- [Installing the plugin](https://github.com/mattermost/mattermost-plugin-nagios#installing-the-plugin)
+- [Configuring the plugin](https://github.com/mattermost/mattermost-plugin-nagios#configuring-the-plugin)
+    - [Configuring the configuration files watcher](https://github.com/mattermost/mattermost-plugin-nagios#configuring-the-configuration-files-watcher)
+        - [Running the watcher as a systemd service](https://github.com/mattermost/mattermost-plugin-nagios#running-the-watcher-as-a-systemd-service)
+            - [Preparing the systemd service unit file](https://github.com/mattermost/mattermost-plugin-nagios#preparing-the-systemd-service-unit-file)
+            - [Starting the watcher](https://github.com/mattermost/mattermost-plugin-nagios#starting-the-watcher)
+- [Updating the plugin](https://github.com/mattermost/mattermost-plugin-nagios#updating-the-plugin)
+- [Using the plugin](https://github.com/mattermost/mattermost-plugin-nagios#using-the-plugin)
+    - [Slash commands overview](https://github.com/mattermost/mattermost-plugin-nagios#slash-commands-overview)
+    - [Slash commands documentation](https://github.com/mattermost/mattermost-plugin-nagios#slash-commands-documentation)
+        - [nagios](https://github.com/mattermost/mattermost-plugin-nagios#nagios)
+            - [get-logs](https://github.com/mattermost/mattermost-plugin-nagios#get-logs)
+                - [host](https://github.com/mattermost/mattermost-plugin-nagios#host)
+                - [service](https://github.com/mattermost/mattermost-plugin-nagios#service)
+        - [set-logs-limit](https://github.com/mattermost/mattermost-plugin-nagios#set-logs-limit)
+        - [set-logs-start-time](https://github.com/mattermost/mattermost-plugin-nagios#set-logs-start-time)
+        - [subscribe](https://github.com/mattermost/mattermost-plugin-nagios#subscribe)
+        - [unsubscribe](https://github.com/mattermost/mattermost-plugin-nagios#unsubscribe)
+        - [set-report-frequency](https://github.com/mattermost/mattermost-plugin-nagios#set-report-frequency)
+- [Contributing](https://github.com/mattermost/mattermost-plugin-nagios#contributing)
+    - [Developing the watcher](https://github.com/mattermost/mattermost-plugin-nagios#developing-the-watcher)
+    - [Reporting security vulnerabilities](https://github.com/mattermost/mattermost-plugin-nagios#reporting-security-vulnerabilities)
 
 ## About
 
@@ -76,7 +76,7 @@ We will be happy to help.
 
 ## Installing the plugin
 
-1. Download the latest stable version of the plugin from the [releases page](https://github.com/ulumuri/mattermost-plugin-nagios/releases)
+1. Download the latest stable version of the plugin from the [releases page](https://github.com/mattermost/mattermost-plugin-nagios/releases)
 2. In Mattermost, go to **System Console → Plugins → Management**
 3. Upload the plugin in the **Upload Plugin** section
 4. Configure the plugin before you enable it :arrow_down:
@@ -102,7 +102,7 @@ We will be happy to help.
     3. Copy the token (you are going to use it later)
 2. Click *Save* to save the settings
 3. Switch to the machine where Nagios is running (preferably)
-    1. Download the latest stable version of the watcher from the [releases page](https://github.com/ulumuri/mattermost-plugin-nagios/releases)
+    1. Download the latest stable version of the watcher from the [releases page](https://github.com/mattermost/mattermost-plugin-nagios/releases)
     2. Move the watcher: `chmod +x watcher1.1.0.linux-amd64 && sudo mv watcher1.1.0.linux-amd64 /usr/local/bin/watcher`
     3. You will most probably want to run the watcher as a systemd service :arrow_down:
 
@@ -137,7 +137,7 @@ systemctl start  mattermost-plugin-nagios-watcher.service
 
 ## Updating the plugin
 
-To update the plugin repeat the [Installing the plugin](https://github.com/ulumuri/mattermost-plugin-nagios/#installing-the-plugin) step.
+To update the plugin repeat the [Installing the plugin](https://github.com/mattermost/mattermost-plugin-nagios/#installing-the-plugin) step.
 
 ## Using the plugin
 
