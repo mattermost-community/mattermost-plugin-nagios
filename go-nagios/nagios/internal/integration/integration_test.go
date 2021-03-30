@@ -21,6 +21,7 @@ func addr(t *testing.T, address string) string {
 			t.Skip()
 		}
 	}
+
 	return address
 }
 

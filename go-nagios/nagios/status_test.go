@@ -82,6 +82,7 @@ func TestGeneralHostRequest_build(t *testing.T) {
 		query             string
 		includeStartCount bool
 	}
+
 	tests := []struct {
 		name               string
 		generalHostRequest GeneralHostRequest
@@ -304,6 +305,7 @@ func TestGeneralServiceRequest_build(t *testing.T) {
 		query             string
 		includeStartCount bool
 	}
+
 	tests := []struct {
 		name                  string
 		generalServiceRequest GeneralServiceRequest

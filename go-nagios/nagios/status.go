@@ -21,12 +21,15 @@ func (h HostStatus) String() string {
 	if h.Up {
 		options = append(options, "up")
 	}
+
 	if h.Down {
 		options = append(options, "down")
 	}
+
 	if h.Unreachable {
 		options = append(options, "unreachable")
 	}
+
 	if h.Pending {
 		options = append(options, "pending")
 	}
@@ -66,6 +69,7 @@ func (g GeneralHostRequest) build(query string, includeStartCount bool) Query {
 
 	if includeStartCount {
 		q.URLQuery.Set("start", strconv.Itoa(g.Start))
+
 		if g.Count > 0 {
 			q.URLQuery.Set("count", strconv.Itoa(g.Count))
 		}
@@ -155,15 +159,19 @@ func (s ServiceStatus) String() string {
 	if s.Ok {
 		options = append(options, "ok")
 	}
+
 	if s.Warning {
 		options = append(options, "warning")
 	}
+
 	if s.Critical {
 		options = append(options, "critical")
 	}
+
 	if s.Unknown {
 		options = append(options, "unknown")
 	}
+
 	if s.Pending {
 		options = append(options, "pending")
 	}
@@ -209,6 +217,7 @@ func (g GeneralServiceRequest) build(query string, includeStartCount bool) Query
 
 	if includeStartCount {
 		q.URLQuery.Set("start", strconv.Itoa(g.Start))
+
 		if g.Count > 0 {
 			q.URLQuery.Set("count", strconv.Itoa(g.Count))
 		}

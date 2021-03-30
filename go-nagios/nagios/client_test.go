@@ -15,6 +15,7 @@ func mustParseURL(rawurl string) *url.URL {
 	if err != nil {
 		panic(fmt.Sprintf("Parse: %v", err))
 	}
+
 	return u
 }
 
@@ -80,6 +81,7 @@ func TestNewClient(t *testing.T) {
 		client  *http.Client
 		address string
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -144,6 +146,7 @@ func TestClient_Query(t *testing.T) {
 		if r.URL.RawQuery != "foo=bar+baz" {
 			t.Errorf("Request URL Query does not contain desired values")
 		}
+
 		if err := json.NewEncoder(w).Encode(want); err != nil {
 			http.Error(w, http.StatusText(http.StatusTeapot), http.StatusTeapot)
 		}

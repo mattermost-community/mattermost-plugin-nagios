@@ -38,12 +38,12 @@ func (c Client) Query(b QueryBuilder, v interface{}) error {
 
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
-		return fmt.Errorf("NewRequest: %w", err)
+		return fmt.Errorf("http.NewRequest: %w", err)
 	}
 
 	res, err := c.c.Do(req)
 	if err != nil {
-		return fmt.Errorf("Do: %w", err)
+		return fmt.Errorf("c.c.Do: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -56,7 +56,7 @@ func (c Client) Query(b QueryBuilder, v interface{}) error {
 	d.DisallowUnknownFields()
 
 	if err := d.Decode(v); err != nil {
-		return fmt.Errorf("Decode: %w", err)
+		return fmt.Errorf("d.Decode: %w", err)
 	}
 
 	return nil
@@ -66,7 +66,7 @@ func (c Client) Query(b QueryBuilder, v interface{}) error {
 func NewClient(client *http.Client, address string) (*Client, error) {
 	u, err := url.Parse(address)
 	if err != nil {
-		return nil, fmt.Errorf("Parse: %w", err)
+		return nil, fmt.Errorf("url.Parse: %w", err)
 	}
 
 	return &Client{

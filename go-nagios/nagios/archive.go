@@ -19,6 +19,7 @@ func (o ObjectTypes) String() string {
 	if o.Host {
 		options = append(options, "host")
 	}
+
 	if o.Service {
 		options = append(options, "service")
 	}
@@ -37,6 +38,7 @@ func (s StateTypes) String() string {
 	if s.Soft {
 		options = append(options, "soft")
 	}
+
 	if s.Hard {
 		options = append(options, "hard")
 	}
@@ -56,9 +58,11 @@ func (h HostStates) String() string {
 	if h.Up {
 		options = append(options, "up")
 	}
+
 	if h.Down {
 		options = append(options, "down")
 	}
+
 	if h.Unreachable {
 		options = append(options, "unreachable")
 	}
@@ -79,12 +83,15 @@ func (s ServiceStates) String() string {
 	if s.Ok {
 		options = append(options, "ok")
 	}
+
 	if s.Warning {
 		options = append(options, "warning")
 	}
+
 	if s.Critical {
 		options = append(options, "critical")
 	}
+
 	if s.Unknown {
 		options = append(options, "unknown")
 	}
@@ -125,6 +132,7 @@ func (g GeneralAlertRequest) build(query string, includeStartCount bool) Query {
 
 	if includeStartCount {
 		q.URLQuery.Set("start", strconv.Itoa(g.Start))
+
 		if g.Count > 0 {
 			q.URLQuery.Set("count", strconv.Itoa(g.Count))
 		}
@@ -217,24 +225,31 @@ func (h HostNotificationTypes) String() string {
 	if h.NoData {
 		options = append(options, "nodata")
 	}
+
 	if h.Down {
 		options = append(options, "down")
 	}
+
 	if h.Unreachable {
 		options = append(options, "unreachable")
 	}
+
 	if h.Recovery {
 		options = append(options, "recovery")
 	}
+
 	if h.HostCustom {
 		options = append(options, "hostcustom")
 	}
+
 	if h.HostAck {
 		options = append(options, "hostack")
 	}
+
 	if h.HostFlapStart {
 		options = append(options, "hostflapstart")
 	}
+
 	if h.HostFlapStop {
 		options = append(options, "hostflapstop")
 	}
@@ -260,27 +275,35 @@ func (s ServiceNotificationTypes) String() string {
 	if s.NoData {
 		options = append(options, "nodata")
 	}
+
 	if s.Critical {
 		options = append(options, "critical")
 	}
+
 	if s.Warning {
 		options = append(options, "warning")
 	}
+
 	if s.Recovery {
 		options = append(options, "recovery")
 	}
+
 	if s.Custom {
 		options = append(options, "custom")
 	}
+
 	if s.ServiceAck {
 		options = append(options, "serviceack")
 	}
+
 	if s.ServiceFlapStart {
 		options = append(options, "serviceflapstart")
 	}
+
 	if s.ServiceFlapStop {
 		options = append(options, "serviceflapstop")
 	}
+
 	if s.Unknown {
 		options = append(options, "unknown")
 	}
@@ -321,6 +344,7 @@ func (g GeneralNotificationRequest) build(query string, includeStartCount bool) 
 
 	if includeStartCount {
 		q.URLQuery.Set("start", strconv.Itoa(g.Start))
+
 		if g.Count > 0 {
 			q.URLQuery.Set("count", strconv.Itoa(g.Count))
 		}

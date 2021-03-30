@@ -10,6 +10,7 @@ func TestQuery_SetNonEmpty(t *testing.T) {
 		key   string
 		value string
 	}
+
 	tests := []struct {
 		name     string
 		URLQuery url.Values

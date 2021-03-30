@@ -164,6 +164,7 @@ func TestGeneralAlertRequest_build(t *testing.T) {
 		query             string
 		includeStartCount bool
 	}
+
 	tests := []struct {
 		name                string
 		generalAlertRequest GeneralAlertRequest
@@ -353,6 +354,7 @@ func TestGeneralNotificationRequest_build(t *testing.T) {
 		query             string
 		includeStartCount bool
 	}
+
 	tests := []struct {
 		name                       string
 		generalNotificationRequest GeneralNotificationRequest

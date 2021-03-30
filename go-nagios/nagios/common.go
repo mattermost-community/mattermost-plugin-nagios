@@ -9,6 +9,7 @@ func buildOptions(options []string) string {
 		if i > 0 {
 			b.WriteRune(' ')
 		}
+
 		b.WriteString(o)
 	}
 
@@ -28,12 +29,15 @@ func (f FormatOptions) String() string {
 	if f.Whitespace {
 		options = append(options, "whitespace")
 	}
+
 	if f.Enumerate {
 		options = append(options, "enumerate")
 	}
+
 	if f.Bitmask {
 		options = append(options, "bitmask")
 	}
+
 	if f.Duration {
 		options = append(options, "duration")
 	}
