@@ -1,11 +1,8 @@
-# Nagios Core API client ![CI](https://github.com/ulumuri/go-nagios/workflows/CI/badge.svg)
+Nagios Core API client
+======================
 
 This is a Go client for the Nagios Core API that can communicate with the Nagios Core JSON CGIs.
 It's the programmatic equivalent of the `<nagios>/nagios/jsonquery.html`.
-
-## Installation
-
-`go get -u github.com/ulumuri/go-nagios/nagios@v1.0.0`
 
 ## Support
 

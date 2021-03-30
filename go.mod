@@ -3,6 +3,7 @@ module github.com/mattermost/mattermost-plugin-nagios
 go 1.13
 
 require (
+	github.com/davecgh/go-spew v1.1.1
 	github.com/dyatlov/go-opengraph v0.0.0-20210112100619-dae8665a5b09 // indirect
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
@@ -17,7 +18,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.0
 	github.com/tinylib/msgp v1.1.5 // indirect
-	github.com/ulumuri/go-nagios v1.0.0
 	github.com/wiggin77/merror v1.0.3 // indirect
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad // indirect
 	golang.org/x/image v0.0.0-20201208152932-35266b937fa6 // indirect

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ulumuri/go-nagios/nagios"
+	"github.com/mattermost/mattermost-plugin-nagios/go-nagios/nagios"
 )
 
 func Test_gettingReportUnsuccessfulMessage(t *testing.T) {

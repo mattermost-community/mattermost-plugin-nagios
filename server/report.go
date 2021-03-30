@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-plugin-api/cluster"
+	"github.com/mattermost/mattermost-plugin-nagios/go-nagios/nagios"
 	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/ulumuri/go-nagios/nagios"
 )
 
 func (p *Plugin) sendMessages(channelID string, messages ...string) error {

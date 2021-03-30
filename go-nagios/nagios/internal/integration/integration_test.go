@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/ulumuri/go-nagios/nagios"
+	"github.com/mattermost/mattermost-plugin-nagios/go-nagios/nagios"
 )
 
 const (
