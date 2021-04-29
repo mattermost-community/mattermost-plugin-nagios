@@ -9,9 +9,9 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-api/cluster"
 	"github.com/mattermost/mattermost-plugin-api/experimental/command"
+	"github.com/mattermost/mattermost-plugin-nagios/go-nagios/nagios"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
-	"github.com/ulumuri/go-nagios/nagios"
 )
 
 // Plugin implements the interface expected by the Mattermost server to

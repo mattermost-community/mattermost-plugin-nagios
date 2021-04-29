@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ulumuri/go-nagios/nagios"
+	"github.com/mattermost/mattermost-plugin-nagios/go-nagios/nagios"
 )
 
 const (

@@ -1,0 +1,3 @@
+package integration
+
+const testInstanceAddress = ""

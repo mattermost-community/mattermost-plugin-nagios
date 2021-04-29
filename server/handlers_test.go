@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/ulumuri/go-nagios/nagios"
+	"github.com/mattermost/mattermost-plugin-nagios/go-nagios/nagios"
 )
 
 func Test_formatHostName(t *testing.T) {
