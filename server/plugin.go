@@ -30,6 +30,8 @@ type Plugin struct {
 
 	botUserID string
 
+	userID string
+
 	commandHandlers map[string]commandHandlerFunc
 
 	monitoringReportJob *cluster.Job
@@ -118,4 +120,8 @@ func (p *Plugin) OnDeactivate() error {
 	}
 
 	return nil
+}
+
+func (p *Plugin) GetUserID() string {
+	return p.userID
 }

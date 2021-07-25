@@ -230,6 +230,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (
 	*model.CommandResponse,
 	*model.AppError) {
 	command, action, parameters := parseCommandArgs(args)
+	p.userID = args.UserId
 
 	if command != "/nagios" {
 		return &model.CommandResponse{}, nil
