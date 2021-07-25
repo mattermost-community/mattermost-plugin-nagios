@@ -469,14 +469,6 @@ func (p *Plugin) subscribe(channelID string, parameters []string) string {
 		return "You must supply exactly one parameter (report|configuration-changes)."
 	}
 
-	user, err := p.API.GetUser(p.GetUserID())
-	if err != nil {
-		return "User is not registered"
-	}
-	if !user.IsSystemAdmin() {
-		return "Subscribe only for System Admin"
-	}
-
 	switch parameters[0] {
 	case reportKey:
 		return setReportChannel(p.API, channelID)
