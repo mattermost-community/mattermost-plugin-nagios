@@ -231,6 +231,15 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (
 	*model.AppError) {
 	command, action, parameters := parseCommandArgs(args)
 
+	user, err := p.API.GetUser(args.UserId)
+	if err != nil {
+		return p.sendResponse(args, "User is not registered"), nil
+	}
+
+	if !user.IsSystemAdmin() {
+		return p.sendResponse(args, "Nagios command only for System Admin and Team Admin"), nil
+	}
+
 	if command != "/nagios" {
 		return &model.CommandResponse{}, nil
 	}
