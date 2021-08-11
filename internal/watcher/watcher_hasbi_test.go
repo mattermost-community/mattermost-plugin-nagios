@@ -9,8 +9,8 @@ import (
 
 func TestWatchFn(t *testing.T) {
 
-	// MaxFileSize = 17*10 ^ 3
-	// MaxReadSize = 5 * 1024
+	MaxFileSize = 20 * 1024
+	MaxReadSize = 5 * 1024
 
 	ignoredExtension := []string{".swp"}
 	// path := "/home/hasbi/file_watcher/100MB.bin"
@@ -19,7 +19,7 @@ func TestWatchFn(t *testing.T) {
 
 	files := []string{path}
 
-	differential, err := NewDifferential(ignoredExtension, files, http.DefaultClient, "http://localhost:8065", "2137", "/home/hasbi/")
+	differential, err := NewDifferential(ignoredExtension, files, http.DefaultClient, "http://localhost:8065", "2137", TemporaryDirectory)
 	if err != nil {
 		fmt.Printf("%+v \n", err)
 		return

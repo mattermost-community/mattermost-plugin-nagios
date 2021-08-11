@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -192,19 +193,70 @@ func (d Differential) WatchFn(path string) error {
 		log.Printf("File equal or higher than %v MB", MaxFileSize/1024/1024)
 
 		srcFile, ok := d.previousContents[path]
-		if ok {
-			err := d.readFileAndFindDiff(path, string(srcFile))
-			return err
+		filePath := after(string(srcFile), "FilePath##")
+		containFilePath := strings.Contains(string(srcFile), "FilePath##")
+
+		if ok && !containFilePath {
+			// After watched file updated, the size higher than threshold
+
+			err = CopyFile(path, TemporaryDirectory+"/"+info.Name())
+			if err != nil {
+				return fmt.Errorf("error copy file  %w", err)
+			}
+
+			// find diff
+			contents, err := ioutil.ReadFile(path)
+			if err != nil {
+				return fmt.Errorf("ioutil.ReadFile: %w", err)
+			}
+
+			checksum := md5.Sum(contents) //nolint:gosec
+			if checksum == d.previousChecksum[path] {
+				return nil
+			}
+
+			diff := cmp.Diff(string(d.previousContents[path]), string(contents))
+
+			// set new previous content
+			contentName := "FilePath##" + TemporaryDirectory + "/" + info.Name()
+			d.previousContents[path] = []byte(contentName)
+
+			if err := d.sendDiff(path, diff); err != nil {
+				return fmt.Errorf("d.sendDiff: %w", err)
+			}
+
+			log.Printf("Sent the diff (size = %d)", len(diff))
+
+			return nil
+		} else if ok && containFilePath {
+			// Before and after update watched file is higher than threshold
+
+			err := d.readFileAndFindDiff(path, filePath)
+			if err != nil {
+				return fmt.Errorf("error read file and make diff %w", err)
+			}
+
+			err = CopyFile(path, filePath)
+			if err != nil {
+				return fmt.Errorf("error copy file  %w", err)
+			}
+
+			return nil
+
 		} else {
-			log.Println("New File appeared")
+			// New files in watched directory
+
 			fileTemp := TemporaryDirectory + "/" + info.Name()
 			err = CopyFile(path, fileTemp)
 			if err != nil {
 				return fmt.Errorf("error copy file  %w", err)
 			}
 
-			err = d.readFileAndFindDiff(path, string(srcFile))
-			return err
+			err = d.readFileAndFindDiff(path, filePath)
+			if err != nil {
+				return fmt.Errorf("error read file and make diff %w", err)
+			}
+			return nil
 		}
 
 	} else {
@@ -261,14 +313,15 @@ func NewDifferential(
 				}
 			}
 
-			fileTemp := TemporaryDirectory + "/" + info.Name()
-			err = CopyFile(p, fileTemp)
+			filePath := TemporaryDirectory + "/" + info.Name()
+			err = CopyFile(p, filePath)
 			if err != nil {
 				return Differential{}, fmt.Errorf("error copy file  %w", err)
 			}
 
+			contentName := "FilePath##" + filePath
 			// Only write temporary folder directory
-			previousContents[p] = []byte(fileTemp)
+			previousContents[p] = []byte(contentName)
 
 		} else {
 			b, err := ioutil.ReadFile(p)
@@ -346,6 +399,19 @@ func copyFileContents(src, dst string) (err error) {
 	}
 	err = out.Sync()
 	return
+}
+
+func after(value string, a string) string {
+	// Get substring after a string.
+	pos := strings.LastIndex(value, a)
+	if pos == -1 {
+		return ""
+	}
+	adjustedPos := pos + len(a)
+	if adjustedPos >= len(value) {
+		return ""
+	}
+	return value[adjustedPos:]
 }
 
 func (d Differential) readFileAndFindDiff(path, srcFile string) (err error) {
