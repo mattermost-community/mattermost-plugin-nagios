@@ -237,7 +237,9 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (
 	}
 
 	if !user.IsSystemAdmin() {
-		return p.sendResponse(args, "Nagios command only for System Admin and Team Admin"), nil
+		if !p.API.HasPermissionToTeam(args.UserId, args.TeamId, model.PERMISSION_MANAGE_TEAM) {
+			return p.sendResponse(args, "Nagios command only for System Admin and Team Admin"), nil
+		}
 	}
 
 	if command != "/nagios" {
