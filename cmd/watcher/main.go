@@ -12,15 +12,17 @@ import (
 )
 
 var (
-	dir   = flag.String("dir", "/usr/local/nagios/etc/", "Nagios configuration files directory")
-	url   = flag.String("url", "", "Mattermost Server address")
-	token = flag.String("token", "", "Nagios plugin token")
+	dir    = flag.String("dir", "/usr/local/nagios/etc/", "Nagios configuration files directory")
+	url    = flag.String("url", "", "Mattermost Server address")
+	token  = flag.String("token", "", "Nagios plugin token")
+	tmpdir = flag.String("tmpdir", "$HOME/temp/watcher", "Temporary Folder to put big File")
 )
 
 func main() {
 	flag.Parse()
 
 	baseDir := *dir
+	tempDir := *tmpdir
 
 	if !filepath.IsAbs(baseDir) {
 		log.Fatal("dir argument must be an absolute path, like /usr/local/nagios/etc/")
@@ -33,7 +35,7 @@ func main() {
 		log.Fatalf("GetAllInDirectory: %v", err)
 	}
 
-	differential, err := watcher.NewDifferential(ignoredExtensions, files, http.DefaultClient, *url, *token)
+	differential, err := watcher.NewDifferential(ignoredExtensions, files, http.DefaultClient, *url, *token, tempDir)
 	if err != nil {
 		log.Fatalf("NewDifferential: %v", err)
 	}

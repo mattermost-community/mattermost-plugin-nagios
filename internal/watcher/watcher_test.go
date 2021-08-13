@@ -149,7 +149,7 @@ func TestNewDifferential(t *testing.T) {
 			token:             "",
 		}
 
-		actual, err := NewDifferential(nil, nil, nil, "", "")
+		actual, err := NewDifferential(nil, nil, nil, "", "", "")
 		if err != nil {
 			t.Fatalf("NewDifferential: %v", err)
 		}
@@ -205,7 +205,7 @@ func TestNewDifferential(t *testing.T) {
 			t.Fatalf("GetAllInDirectory: %v", err)
 		}
 
-		actual, err := NewDifferential([]string{".swp"}, files, http.DefaultClient, "dummy", "2137")
+		actual, err := NewDifferential([]string{".swp"}, files, http.DefaultClient, "dummy", "2137", "")
 		if err != nil {
 			t.Fatalf("NewDifferential: %v", err)
 		}

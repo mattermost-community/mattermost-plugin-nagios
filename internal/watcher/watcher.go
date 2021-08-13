@@ -1,6 +1,7 @@
 package watcher
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/md5" //nolint:gosec
 	"encoding/json"
@@ -11,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -26,6 +28,12 @@ func getIgnoredExtensions(extensions []string) map[string]struct{} {
 
 	return lookup
 }
+
+var (
+	MaxFileSize        int64 = 100 * 1024 * 1024
+	MaxReadSize        int64 = 5 * 1024 * 1024
+	TemporaryDirectory       = os.Getenv("HOME") + "/temp/watcher"
+)
 
 // GetAllInDirectory recursively returns all paths to files and directories in
 // dir (excluding files with ignored extensions). It returns nil, nil, <err> on
@@ -174,33 +182,106 @@ func (d Differential) WatchFn(path string) error {
 		return nil
 	}
 
-	// This is to allow for changes to propagate on the filesystem. If the file
-	// is large, the write won't be atomic. It will happen in, for example, 4096
-	// bytes chunks. 1 ms should be enough.
-	time.Sleep(time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
 
-	contents, err := ioutil.ReadFile(path)
+	info, err := os.Stat(path)
 	if err != nil {
-		return fmt.Errorf("ioutil.ReadFile: %w", err)
+		return fmt.Errorf("error read file status %w", err)
 	}
 
-	checksum := md5.Sum(contents) //nolint:gosec
+	if info.Size() >= MaxFileSize {
+		log.Printf("File equal or higher than %v MB", MaxFileSize/1024/1024)
 
-	if checksum == d.previousChecksum[path] {
-		return nil
+		srcFile, ok := d.previousContents[path]
+		filePath := after(string(srcFile), "FilePath##")
+		containFilePath := strings.Contains(string(srcFile), "FilePath##")
+
+		if ok && !containFilePath {
+			// After watched file updated, the size higher than threshold
+
+			err = CopyFile(path, TemporaryDirectory+"/"+info.Name())
+			if err != nil {
+				return fmt.Errorf("error copy file  %w", err)
+			}
+
+			// find diff
+			contents, err := ioutil.ReadFile(path)
+			if err != nil {
+				return fmt.Errorf("ioutil.ReadFile: %w", err)
+			}
+
+			checksum := md5.Sum(contents) //nolint:gosec
+			if checksum == d.previousChecksum[path] {
+				return nil
+			}
+
+			diff := cmp.Diff(string(d.previousContents[path]), string(contents))
+
+			// set new previous content
+			contentName := "FilePath##" + TemporaryDirectory + "/" + info.Name()
+			d.previousContents[path] = []byte(contentName)
+
+			if err := d.sendDiff(path, diff); err != nil {
+				return fmt.Errorf("d.sendDiff: %w", err)
+			}
+
+			log.Printf("Sent the diff (size = %d)", len(diff))
+
+			return nil
+		} else if ok && containFilePath {
+			// Before and after update watched file is higher than threshold
+
+			err := d.readFileAndFindDiff(path, filePath)
+			if err != nil {
+				return fmt.Errorf("error read file and make diff %w", err)
+			}
+
+			err = CopyFile(path, filePath)
+			if err != nil {
+				return fmt.Errorf("error copy file  %w", err)
+			}
+
+			return nil
+
+		} else {
+			// New files in watched directory
+
+			fileTemp := TemporaryDirectory + "/" + info.Name()
+			err = CopyFile(path, fileTemp)
+			if err != nil {
+				return fmt.Errorf("error copy file  %w", err)
+			}
+
+			err = d.readFileAndFindDiff(path, filePath)
+			if err != nil {
+				return fmt.Errorf("error read file and make diff %w", err)
+			}
+			return nil
+		}
+
+	} else {
+		contents, err := ioutil.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("ioutil.ReadFile: %w", err)
+		}
+
+		checksum := md5.Sum(contents) //nolint:gosec
+
+		if checksum == d.previousChecksum[path] {
+			return nil
+		}
+
+		diff := cmp.Diff(string(d.previousContents[path]), string(contents))
+
+		if err := d.sendDiff(path, diff); err != nil {
+			return fmt.Errorf("d.sendDiff: %w", err)
+		}
+
+		log.Printf("Sent the diff (size = %d)", len(diff))
+
+		d.previousChecksum[path] = checksum
+		d.previousContents[path] = contents
 	}
-
-	diff := cmp.Diff(string(d.previousContents[path]), string(contents))
-
-	if err := d.sendDiff(path, diff); err != nil {
-		return fmt.Errorf("d.sendDiff: %w", err)
-	}
-
-	log.Printf("Sent the diff (size = %d)", len(diff))
-
-	d.previousChecksum[path] = checksum
-	d.previousContents[path] = contents
-
 	return nil
 }
 
@@ -208,18 +289,49 @@ func (d Differential) WatchFn(path string) error {
 func NewDifferential(
 	ignoredExtensions, initialFilePaths []string,
 	httpClient *http.Client,
-	url, token string) (Differential, error) {
+	url, token, tempDir string) (Differential, error) {
 	previousChecksum := make(map[string][16]byte)
 	previousContents := make(map[string][]byte)
 
+	if tempDir != "" {
+		TemporaryDirectory = tempDir
+	}
 	for _, p := range initialFilePaths {
-		b, err := ioutil.ReadFile(p)
+		info, err := os.Stat(p)
 		if err != nil {
-			return Differential{}, fmt.Errorf("ioutil.ReadFile: %w", err)
+			return Differential{}, fmt.Errorf("error read file status %w", err)
 		}
 
-		previousChecksum[p] = md5.Sum(b) //nolint:gosec
-		previousContents[p] = b
+		if info.Size() >= MaxFileSize {
+			log.Printf("File equal or higher than %v MB", MaxFileSize/1024/1024)
+
+			_, err = os.Stat(TemporaryDirectory)
+			if os.IsNotExist(err) {
+				err := os.MkdirAll(TemporaryDirectory, 0777)
+				if err != nil {
+					return Differential{}, fmt.Errorf("error create temporary folder %w", err)
+				}
+			}
+
+			filePath := TemporaryDirectory + "/" + info.Name()
+			err = CopyFile(p, filePath)
+			if err != nil {
+				return Differential{}, fmt.Errorf("error copy file  %w", err)
+			}
+
+			contentName := "FilePath##" + filePath
+			// Only write temporary folder directory
+			previousContents[p] = []byte(contentName)
+
+		} else {
+			b, err := ioutil.ReadFile(p)
+			if err != nil {
+				return Differential{}, fmt.Errorf("ioutil.ReadFile: %w", err)
+			}
+
+			previousChecksum[p] = md5.Sum(b) //nolint:gosec
+			previousContents[p] = b
+		}
 	}
 
 	return Differential{
@@ -230,4 +342,134 @@ func NewDifferential(
 		url:               url,
 		token:             token,
 	}, nil
+}
+
+// CopyFile copies a file from src to dst. If src and dst files exist, and are
+// the same, then return success. If that fail, copy the file contents from src to dst.
+func CopyFile(src, dst string) (err error) {
+	sfi, err := os.Stat(src)
+	if err != nil {
+		return
+	}
+	if !sfi.Mode().IsRegular() {
+		// cannot copy non-regular files (e.g., directories,
+		// symlinks, devices, etc.)
+		return fmt.Errorf("CopyFile: non-regular source file %s (%q)", sfi.Name(), sfi.Mode().String())
+	}
+	dfi, err := os.Stat(dst)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return
+		}
+	} else {
+		if !(dfi.Mode().IsRegular()) {
+			return fmt.Errorf("CopyFile: non-regular destination file %s (%q)", dfi.Name(), dfi.Mode().String())
+		}
+		if os.SameFile(sfi, dfi) {
+			return
+		}
+	}
+
+	err = copyFileContents(src, dst)
+	return
+}
+
+// copyFileContents copies the contents of the file named src to the file named
+// by dst. The file will be created if it does not already exist. If the
+// destination file exists, all it's contents will be replaced by the contents
+// of the source file.
+func copyFileContents(src, dst string) (err error) {
+	in, err := os.Open(src)
+	if err != nil {
+		return
+	}
+	defer in.Close()
+	out, err := os.Create(dst)
+	if err != nil {
+		return
+	}
+	defer func() {
+		cerr := out.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+	if _, err = io.Copy(out, in); err != nil {
+		return
+	}
+	err = out.Sync()
+	return
+}
+
+func after(value string, a string) string {
+	// Get substring after a string.
+	pos := strings.LastIndex(value, a)
+	if pos == -1 {
+		return ""
+	}
+	adjustedPos := pos + len(a)
+	if adjustedPos >= len(value) {
+		return ""
+	}
+	return value[adjustedPos:]
+}
+
+func (d Differential) readFileAndFindDiff(path, srcFile string) (err error) {
+
+	f1, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("error openning watched file : %w", err)
+	}
+	f2, err := os.Open(srcFile)
+	if err != nil {
+		return fmt.Errorf("error openning temp file: %w", err)
+	}
+	defer f1.Close()
+	defer f2.Close()
+
+	r1 := bufio.NewReader(f1)
+	r2 := bufio.NewReader(f2)
+
+	eof1 := false
+	eof2 := false
+
+	for {
+		buf1 := make([]byte, MaxReadSize)
+		buf2 := make([]byte, MaxReadSize)
+		// read first file
+		n, err := r1.Read(buf1)
+		if err == io.EOF {
+			eof1 = true
+		} else if err != nil {
+			return fmt.Errorf("error read chunkz watched file: %w", err)
+		}
+		content1 := buf1[:n]
+
+		// read second file
+		n, err = r2.Read(buf2)
+		if err == io.EOF {
+			eof2 = true
+		} else if err != nil {
+			return fmt.Errorf("error read chunkz watched file: %w", err)
+		}
+		content2 := buf2[:n]
+
+		if eof1 && eof2 {
+			break
+		}
+
+		checksum1 := md5.Sum(content1) //nolint:gosec
+		checksum2 := md5.Sum(content2) //nolint:gosec
+
+		if checksum1 == checksum2 {
+			continue
+		}
+
+		diff := cmp.Diff(string(content2), string(content1))
+
+		if err := d.sendDiff(path, diff); err != nil {
+			return fmt.Errorf("d.sendDiff: %w", err)
+		}
+	}
+	return nil
 }
