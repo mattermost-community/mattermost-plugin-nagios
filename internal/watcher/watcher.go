@@ -30,9 +30,15 @@ func getIgnoredExtensions(extensions []string) map[string]struct{} {
 }
 
 var (
-	MaxFileSize        int64 = 100 * 1024 * 1024
-	MaxReadSize        int64 = 5 * 1024 * 1024
-	TemporaryDirectory       = os.Getenv("HOME") + "/temp/watcher"
+	// MaxFileSize to set the maximum size of the file to be read and stored in memory,
+	// if more than that, the file will be saved to a temporary folder
+	MaxFileSize int64 = 100 * 1024 * 1024
+
+	// MaxReadSize to set the buffer used to read the contents of the file each loop
+	MaxReadSize int64 = 5 * 1024 * 1024
+
+	// TemporaryDirectory the location of the folder to store temporary files
+	TemporaryDirectory = os.Getenv("HOME") + "/temp/watcher"
 )
 
 // GetAllInDirectory recursively returns all paths to files and directories in
@@ -71,6 +77,7 @@ func GetAllInDirectory(dir string, ignoredExtensions []string) (
 	return files, directories, nil
 }
 
+// WatchFuncProvider for interfacing WatchFn for WatchDirectories
 type WatchFuncProvider interface {
 	WatchFn(path string) error
 }
@@ -129,11 +136,13 @@ type Differential struct {
 	url, token        string
 }
 
+// Change struct for send Difference
 type Change struct {
 	Name string
 	Diff string
 }
 
+// TokenHeader for setting Header send Diff
 const TokenHeader = "X-Nagios-Plugin-Token" //nolint:gosec
 
 func checkStatusCode2xx(statusCode int) bool {
@@ -177,6 +186,7 @@ func (d Differential) sendDiff(path string, diff string) error {
 	return nil
 }
 
+// WatchFn for reading files in the watched folder and look for difference from the last update
 func (d Differential) WatchFn(path string) error {
 	if _, ok := d.ignoredExtensions[filepath.Ext(path)]; ok {
 		return nil
