@@ -378,7 +378,7 @@ func CopyFile(src, dst string) (err error) {
 // by dst. The file will be created if it does not already exist. If the
 // destination file exists, all it's contents will be replaced by the contents
 // of the source file.
-func copyFileContents(src, dst string) (err error) {
+func copyFileContents(src, dst string) error {
 	in, err := os.Open(src)
 	if err != nil {
 		return
