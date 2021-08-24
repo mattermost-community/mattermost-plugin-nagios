@@ -236,8 +236,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (
 		return p.sendResponse(args, "User is not registered"), nil
 	}
 
-	if !user.IsSystemAdmin() {
-		if !p.API.HasPermissionToTeam(args.UserId, args.TeamId, model.PERMISSION_MANAGE_TEAM) {
+	if !user.IsSystemAdmin() && !p.API.HasPermissionToTeam(args.UserId, args.TeamId, model.PERMISSION_MANAGE_TEAM) {
 			return p.sendResponse(args, "Nagios command only for System Admin and Team Admin"), nil
 		}
 	}
