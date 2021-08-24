@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -29,10 +30,25 @@ func getIgnoredExtensions(extensions []string) map[string]struct{} {
 	return lookup
 }
 
+const sizeB = 1
+const sizeKb = 1024 * sizeB
+const sizeMb = 1024 * sizeKb
+const sizeGb = 1024 * sizeMb
+const sizeTb = 1024 * sizeGb
+
 var (
-	MaxFileSize        int64 = 100 * 1024 * 1024
-	MaxReadSize        int64 = 5 * 1024 * 1024
-	TemporaryDirectory       = os.Getenv("HOME") + "/temp/watcher"
+	// MaxFileSize to set the maximum size of the file to be read and stored in memory,
+	// if more than that, the file will be saved to a temporary folder
+	MaxFileSize int64 = 100 * sizeMb
+
+	// MaxReadSize to set the buffer used to read the contents of the file each loop
+	MaxReadSize int64 = 5 * sizeMb
+
+	// TemporaryDirectory the location of the folder to store temporary files
+	TemporaryDirectory = os.Getenv("HOME") + "/temp/watcher"
+
+	// FullPermissionBits for Granting User, Group and Others the ability to Read, Write, and Execute files or folders
+	FullPermissionBits = 0777
 )
 
 // GetAllInDirectory recursively returns all paths to files and directories in
@@ -71,6 +87,7 @@ func GetAllInDirectory(dir string, ignoredExtensions []string) (
 	return files, directories, nil
 }
 
+// WatchFuncProvider for interfacing WatchFn for WatchDirectories
 type WatchFuncProvider interface {
 	WatchFn(path string) error
 }
@@ -129,11 +146,13 @@ type Differential struct {
 	url, token        string
 }
 
+// Change struct for send Difference
 type Change struct {
 	Name string
 	Diff string
 }
 
+// TokenHeader for setting Header send Diff
 const TokenHeader = "X-Nagios-Plugin-Token" //nolint:gosec
 
 func checkStatusCode2xx(statusCode int) bool {
@@ -177,6 +196,7 @@ func (d Differential) sendDiff(path string, diff string) error {
 	return nil
 }
 
+// WatchFn for reading files in the watched folder and look for difference from the last update
 func (d Differential) WatchFn(path string) error {
 	if _, ok := d.ignoredExtensions[filepath.Ext(path)]; ok {
 		return nil
@@ -190,7 +210,7 @@ func (d Differential) WatchFn(path string) error {
 	}
 
 	if info.Size() >= MaxFileSize {
-		log.Printf("File equal or higher than %v MB", MaxFileSize/1024/1024)
+		log.Printf("File equal or higher than %v MB", MaxFileSize/sizeMb)
 
 		srcFile, ok := d.previousContents[path]
 		filePath := after(string(srcFile), "FilePath##")
@@ -198,37 +218,11 @@ func (d Differential) WatchFn(path string) error {
 
 		if ok && !containFilePath {
 			// After watched file updated, the size higher than threshold
-
-			err = CopyFile(path, TemporaryDirectory+"/"+info.Name())
-			if err != nil {
-				return fmt.Errorf("error copy file  %w", err)
-			}
-
-			// find diff
-			contents, err := ioutil.ReadFile(path)
-			if err != nil {
-				return fmt.Errorf("ioutil.ReadFile: %w", err)
-			}
-
-			checksum := md5.Sum(contents) //nolint:gosec
-			if checksum == d.previousChecksum[path] {
-				return nil
-			}
-
-			diff := cmp.Diff(string(d.previousContents[path]), string(contents))
-
-			// set new previous content
-			contentName := "FilePath##" + TemporaryDirectory + "/" + info.Name()
-			d.previousContents[path] = []byte(contentName)
-
-			if err := d.sendDiff(path, diff); err != nil {
-				return fmt.Errorf("d.sendDiff: %w", err)
-			}
-
-			log.Printf("Sent the diff (size = %d)", len(diff))
-
+			d.WatchLargeFileFn(info, path)
 			return nil
-		} else if ok && containFilePath {
+		}
+
+		if ok && containFilePath {
 			// Before and after update watched file is higher than threshold
 
 			err := d.readFileAndFindDiff(path, filePath)
@@ -240,48 +234,46 @@ func (d Differential) WatchFn(path string) error {
 			if err != nil {
 				return fmt.Errorf("error copy file  %w", err)
 			}
-
-			return nil
-
-		} else {
-			// New files in watched directory
-
-			fileTemp := TemporaryDirectory + "/" + info.Name()
-			err = CopyFile(path, fileTemp)
-			if err != nil {
-				return fmt.Errorf("error copy file  %w", err)
-			}
-
-			err = d.readFileAndFindDiff(path, filePath)
-			if err != nil {
-				return fmt.Errorf("error read file and make diff %w", err)
-			}
 			return nil
 		}
 
-	} else {
-		contents, err := ioutil.ReadFile(path)
+		// New files in watched directory
+		fileTemp := TemporaryDirectory + "/" + info.Name()
+		err = CopyFile(path, fileTemp)
 		if err != nil {
-			return fmt.Errorf("ioutil.ReadFile: %w", err)
+			return fmt.Errorf("error copy file  %w", err)
 		}
 
-		checksum := md5.Sum(contents) //nolint:gosec
-
-		if checksum == d.previousChecksum[path] {
-			return nil
+		err = d.readFileAndFindDiff(path, filePath)
+		if err != nil {
+			return fmt.Errorf("error read file and make diff %w", err)
 		}
+		return nil
 
-		diff := cmp.Diff(string(d.previousContents[path]), string(contents))
-
-		if err := d.sendDiff(path, diff); err != nil {
-			return fmt.Errorf("d.sendDiff: %w", err)
-		}
-
-		log.Printf("Sent the diff (size = %d)", len(diff))
-
-		d.previousChecksum[path] = checksum
-		d.previousContents[path] = contents
 	}
+
+	contents, err := ioutil.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("ioutil.ReadFile: %w", err)
+	}
+
+	checksum := md5.Sum(contents) //nolint:gosec
+
+	if checksum == d.previousChecksum[path] {
+		return nil
+	}
+
+	diff := cmp.Diff(string(d.previousContents[path]), string(contents))
+
+	if err := d.sendDiff(path, diff); err != nil {
+		return fmt.Errorf("d.sendDiff: %w", err)
+	}
+
+	log.Printf("Sent the diff (size = %d)", len(diff))
+
+	d.previousChecksum[path] = checksum
+	d.previousContents[path] = contents
+
 	return nil
 }
 
@@ -303,13 +295,13 @@ func NewDifferential(
 		}
 
 		if info.Size() >= MaxFileSize {
-			log.Printf("File equal or higher than %v MB", MaxFileSize/1024/1024)
+			log.Printf("File equal or higher than %v MB", MaxFileSize/sizeMb)
 
 			_, err = os.Stat(TemporaryDirectory)
 			if os.IsNotExist(err) {
 				err := os.MkdirAll(TemporaryDirectory, 0777)
 				if err != nil {
-					return Differential{}, fmt.Errorf("error create temporary folder %w", err)
+					return Differential{}, fmt.Errorf("failed to create temporary folder %w", err)
 				}
 			}
 
@@ -322,16 +314,14 @@ func NewDifferential(
 			contentName := "FilePath##" + filePath
 			// Only write temporary folder directory
 			previousContents[p] = []byte(contentName)
-
-		} else {
-			b, err := ioutil.ReadFile(p)
-			if err != nil {
-				return Differential{}, fmt.Errorf("ioutil.ReadFile: %w", err)
-			}
-
-			previousChecksum[p] = md5.Sum(b) //nolint:gosec
-			previousContents[p] = b
+			continue
 		}
+		b, err := ioutil.ReadFile(p)
+		if err != nil {
+			return Differential{}, fmt.Errorf("ioutil.ReadFile: %w", err)
+		}
+		previousChecksum[p] = md5.Sum(b) //nolint:gosec
+		previousContents[p] = b
 	}
 
 	return Differential{
@@ -381,12 +371,12 @@ func CopyFile(src, dst string) (err error) {
 func copyFileContents(src, dst string) error {
 	in, err := os.Open(src)
 	if err != nil {
-		return
+		return err
 	}
 	defer in.Close()
 	out, err := os.Create(dst)
 	if err != nil {
-		return
+		return err
 	}
 	defer func() {
 		cerr := out.Close()
@@ -395,10 +385,10 @@ func copyFileContents(src, dst string) error {
 		}
 	}()
 	if _, err = io.Copy(out, in); err != nil {
-		return
+		return err
 	}
 	err = out.Sync()
-	return
+	return err
 }
 
 func after(value string, a string) string {
@@ -412,6 +402,41 @@ func after(value string, a string) string {
 		return ""
 	}
 	return value[adjustedPos:]
+}
+
+// WatchLargeFileFn is function to read large file then puts the contents of the file into a temporary directory
+// and saves the file path to previousContents
+func (d Differential) WatchLargeFileFn(info fs.FileInfo, path string) error {
+
+	err := CopyFile(path, TemporaryDirectory+"/"+info.Name())
+	if err != nil {
+		return fmt.Errorf("failed to copy file  %w", err)
+	}
+
+	// find diff
+	contents, err := ioutil.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("ioutil.ReadFile: %w", err)
+	}
+
+	checksum := md5.Sum(contents) //nolint:gosec
+	if checksum == d.previousChecksum[path] {
+		return nil
+	}
+
+	diff := cmp.Diff(string(d.previousContents[path]), string(contents))
+
+	// set new previous content
+	contentName := "FilePath##" + TemporaryDirectory + "/" + info.Name()
+	d.previousContents[path] = []byte(contentName)
+
+	if err := d.sendDiff(path, diff); err != nil {
+		return fmt.Errorf("d.sendDiff: %w", err)
+	}
+
+	log.Printf("Sent the diff (size = %d)", len(diff))
+
+	return nil
 }
 
 func (d Differential) readFileAndFindDiff(path, srcFile string) (err error) {

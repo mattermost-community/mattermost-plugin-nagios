@@ -15,7 +15,7 @@ var (
 	dir    = flag.String("dir", "/usr/local/nagios/etc/", "Nagios configuration files directory")
 	url    = flag.String("url", "", "Mattermost Server address")
 	token  = flag.String("token", "", "Nagios plugin token")
-	tmpdir = flag.String("tmpdir", "$HOME/temp/watcher", "Temporary Folder to put big File")
+	tmpdir = flag.String("tmpdir", "$HOME/temp/watcher", "Temporary Folder to put large file")
 )
 
 func main() {
