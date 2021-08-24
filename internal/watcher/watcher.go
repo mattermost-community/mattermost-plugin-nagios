@@ -308,7 +308,7 @@ func NewDifferential(
 			filePath := TemporaryDirectory + "/" + info.Name()
 			err = CopyFile(p, filePath)
 			if err != nil {
-				return Differential{}, fmt.Errorf("error copy file  %w", err)
+				return Differential{}, fmt.Errorf("failed to copy file  %w", err)
 			}
 
 			contentName := "FilePath##" + filePath
