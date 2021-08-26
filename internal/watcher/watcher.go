@@ -230,8 +230,7 @@ func (d Differential) WatchFn(path string) error {
 				return fmt.Errorf("error read file and make diff %w", err)
 			}
 
-			err = CopyFile(path, filePath)
-			if err != nil {
+			if err = CopyFile(path, filePath); err != nil {
 				return fmt.Errorf("error copy file  %w", err)
 			}
 			return nil
