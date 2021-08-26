@@ -45,7 +45,7 @@ var (
 	MaxReadSize int64 = 5 * sizeMb
 
 	// TemporaryDirectory the location of the folder to store temporary files
-	TemporaryDirectory = os.Getenv("HOME") + "/temp/watcher"
+	TemporaryDirectory = os.TempDir()
 
 	// FullPermissionBits for Granting User, Group and Others the ability to Read, Write, and Execute files or folders
 	FullPermissionBits = 0777
