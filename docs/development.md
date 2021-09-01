@@ -29,7 +29,7 @@ To avoid having to manually install your plugin, build and deploy your plugin us
 
 If your Mattermost server is running locally, you can enable [local mode](https://docs.mattermost.com/administration/mmctl-cli-tool.html#local-mode) to streamline deploying your plugin. After configuring it, just run:
 
-```
+```shell script
 make deploy
 ```
 
