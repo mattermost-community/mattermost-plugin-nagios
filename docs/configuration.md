@@ -5,7 +5,7 @@
 1. In Mattermost, go to **System Console > Plugins > Nagios**.
 2. Set the **Nagios URL**. Remember to add `http://` or `https://` at the beginning (e.g.: `https://nagios.fedoraproject.org`).
 3. Select **Save**.
-4. Go to**Plugins > Nagios**, then select **Enable**.
+4. Go to **Plugins > Nagios**, then select **Enable**.
 5. The plugin is now ready to use.
 
 ### Configuring the configuration files watcher
