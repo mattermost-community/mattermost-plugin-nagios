@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/mattermost/mattermost-plugin-nagios/internal/watcher"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin"
 )
 
 func formatChange(change watcher.Change) string {
@@ -19,7 +19,7 @@ func formatChange(change watcher.Change) string {
 
 	b.WriteString("```diff\n")
 
-	if len(change.Diff)+b.Len()+3 > model.POST_MESSAGE_MAX_RUNES_V1*4 {
+	if len(change.Diff)+b.Len()+3 > model.PostMessageMaxRunesV1*4 {
 		b.WriteString("File has been changed, but the diff is too long.\n")
 	} else {
 		b.WriteString(change.Diff)

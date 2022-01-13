@@ -4,10 +4,10 @@ go 1.13
 
 require (
 	github.com/davecgh/go-spew v1.1.1
-	github.com/fsnotify/fsnotify v1.4.9
-	github.com/google/go-cmp v0.5.5
-	github.com/mattermost/mattermost-plugin-api v0.0.15
-	github.com/mattermost/mattermost-server/v5 v5.3.2-0.20210412170128-2de65cfb1160
+	github.com/fsnotify/fsnotify v1.5.1
+	github.com/google/go-cmp v0.5.6
+	github.com/mattermost/mattermost-plugin-api v0.0.21
+	github.com/mattermost/mattermost-server/v6 v6.0.0-20211207185652-92e80bd4ed31
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.0
 )
