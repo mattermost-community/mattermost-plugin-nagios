@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin"
 )
 
 func getAutoCompleteDesc(m map[string]commandHandlerFunc) string {
@@ -236,7 +236,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (
 		return p.sendResponse(args, "User is not registered"), nil
 	}
 
-	if !user.IsSystemAdmin() && !p.API.HasPermissionToTeam(args.UserId, args.TeamId, model.PERMISSION_MANAGE_TEAM) {
+	if !user.IsSystemAdmin() && !p.API.HasPermissionToTeam(args.UserId, args.TeamId, model.PermissionManageTeam) {
 		return p.sendResponse(args, "Nagios commands can only be run by System Admins and Team Admins"), nil
 	}
 
