@@ -304,7 +304,7 @@ func NewDifferential(
 				}
 			}
 
-			filePath := TemporaryDirectory + "/" + info.Name()
+			filePath := filepath.Join(TemporaryDirectory,info.Name())
 			err = CopyFile(p, filePath)
 			if err != nil {
 				return Differential{}, fmt.Errorf("failed to copy file  %w", err)
