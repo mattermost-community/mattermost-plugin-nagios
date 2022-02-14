@@ -15,27 +15,27 @@ var (
 	dir   = flag.String("dir", "/usr/local/nagios/etc/", "Nagios configuration files directory")
 	url   = flag.String("url", "", "Mattermost Server address")
 	token = flag.String("token", "", "Nagios plugin token")
-	tmpdir = flag.String("tmpdir", "$HOME/temp/watcher", "Temporary Folder to put large file")
 )
 
 func main() {
 	flag.Parse()
 
 	baseDir := *dir
-	tempDir := *tmpdir
 
 	if !filepath.IsAbs(baseDir) {
 		log.Fatal("dir argument must be an absolute path, like /usr/local/nagios/etc/")
 	}
 
-	ignoredExtensions := []string{".swp"}
+	allowedExtensions := map[string]bool{
+		".cfg": false,
+	}
 
-	files, directories, err := watcher.GetAllInDirectory(baseDir, ignoredExtensions)
+	files, directories, err := watcher.GetAllInDirectory(baseDir, allowedExtensions)
 	if err != nil {
 		log.Fatalf("GetAllInDirectory: %v", err)
 	}
 
-	differential, err := watcher.NewDifferential(ignoredExtensions, files, http.DefaultClient, *url, *token, tempDir)
+	differential, err := watcher.NewDifferential(allowedExtensions, files, http.DefaultClient, *url, *token)
 	if err != nil {
 		log.Fatalf("NewDifferential: %v", err)
 	}

@@ -20,8 +20,7 @@ func TestGetAllInDirectory(t *testing.T) {
 		expectedFilesCount = 2 * filesMultiplier
 	)
 
-	ignoredExtensions := []string{".swp"}
-	ignoredExtensionsLookup := getIgnoredExtensions(ignoredExtensions)
+	allowedExtensions := map[string]bool{".cfg": false}
 
 	baseDir, err := ioutil.TempDir("", "watcher_test_*")
 	if err != nil {
@@ -36,7 +35,7 @@ func TestGetAllInDirectory(t *testing.T) {
 	}
 
 	for i := 0; i < filesMultiplier; i++ {
-		if _, err = ioutil.TempFile(baseDir, "*"); err != nil {
+		if _, err = ioutil.TempFile(baseDir, "*.cfg"); err != nil {
 			t.Fatalf("TempFile: %v", err)
 		}
 
@@ -44,7 +43,15 @@ func TestGetAllInDirectory(t *testing.T) {
 			t.Fatalf("TempFile: %v", err)
 		}
 
+		if _, err = ioutil.TempFile(baseDir, "*"); err != nil {
+			t.Fatalf("TempFile: %v", err)
+		}
+
 		if _, err = ioutil.TempFile(subDir, "*"); err != nil {
+			t.Fatalf("TempFile: %v", err)
+		}
+
+		if _, err = ioutil.TempFile(subDir, "*.cfg"); err != nil {
 			t.Fatalf("TempFile: %v", err)
 		}
 
@@ -53,7 +60,7 @@ func TestGetAllInDirectory(t *testing.T) {
 		}
 	}
 
-	files, directories, err := GetAllInDirectory(baseDir, ignoredExtensions)
+	files, directories, err := GetAllInDirectory(baseDir, allowedExtensions)
 	if err != nil {
 		t.Fatalf("GetAllInDirectory: %v", err)
 	}
@@ -68,8 +75,8 @@ func TestGetAllInDirectory(t *testing.T) {
 
 	t.Run("Ignored extensions", func(t *testing.T) {
 		for _, f := range files {
-			if _, ok := ignoredExtensionsLookup[filepath.Ext(f)]; ok {
-				assert.Fail(t, "Haven't excluded files with ignored extensions.")
+			if _, ok := allowedExtensions[filepath.Ext(f)]; !ok {
+				assert.Fail(t, "ignored file included")
 				return
 			}
 		}
@@ -105,7 +112,7 @@ func TestWatchDirectories(t *testing.T) {
 		t.Fatalf("TempFile: %v", err)
 	}
 
-	_, directories, err := GetAllInDirectory(baseDir, []string{".swp"})
+	_, directories, err := GetAllInDirectory(baseDir, map[string]bool{".cfg": false})
 	if err != nil {
 		t.Fatalf("GetAllInDirectory: %v", err)
 	}
@@ -141,7 +148,7 @@ func TestWatchDirectories(t *testing.T) {
 func TestNewDifferential(t *testing.T) {
 	t.Run("Empty struct", func(t *testing.T) {
 		expected := Differential{
-			ignoredExtensions: getIgnoredExtensions(nil),
+			allowedExtensions: make(map[string]bool),
 			previousChecksum:  make(map[string][16]byte),
 			previousContents:  make(map[string][]byte),
 			client:            nil,
@@ -149,7 +156,7 @@ func TestNewDifferential(t *testing.T) {
 			token:             "",
 		}
 
-		actual, err := NewDifferential(nil, nil, nil, "", "", "")
+		actual, err := NewDifferential(nil, nil, nil, "", "")
 		if err != nil {
 			t.Fatalf("NewDifferential: %v", err)
 		}
@@ -171,7 +178,7 @@ func TestNewDifferential(t *testing.T) {
 		for i := 0; i < 10; i++ {
 			var f *os.File
 
-			f, err = ioutil.TempFile(baseDir, "*")
+			f, err = ioutil.TempFile(baseDir, "*.cfg")
 			if err != nil {
 				t.Fatalf("TempFile: %v", err)
 			}
@@ -192,7 +199,7 @@ func TestNewDifferential(t *testing.T) {
 		}
 
 		expected := Differential{
-			ignoredExtensions: getIgnoredExtensions([]string{".swp"}),
+			allowedExtensions: map[string]bool{".cfg": false},
 			previousChecksum:  previousChecksum,
 			previousContents:  previousContents,
 			client:            http.DefaultClient,
@@ -200,12 +207,12 @@ func TestNewDifferential(t *testing.T) {
 			token:             "2137",
 		}
 
-		files, _, err := GetAllInDirectory(baseDir, []string{})
+		files, _, err := GetAllInDirectory(baseDir, map[string]bool{".cfg": false})
 		if err != nil {
 			t.Fatalf("GetAllInDirectory: %v", err)
 		}
 
-		actual, err := NewDifferential([]string{".swp"}, files, http.DefaultClient, "dummy", "2137", "")
+		actual, err := NewDifferential(map[string]bool{".cfg": false}, files, http.DefaultClient, "dummy", "2137")
 		if err != nil {
 			t.Fatalf("NewDifferential: %v", err)
 		}
