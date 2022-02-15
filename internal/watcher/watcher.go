@@ -39,7 +39,9 @@ func GetAllInDirectory(dir string, allowedExtensions map[string]bool) (
 		if _, ok := allowedExtensions[filepath.Ext(path)]; !ok {
 			return nil
 		}
+
 		files = append(files, path)
+
 		return nil
 	}
 
@@ -201,7 +203,6 @@ func NewDifferential(
 	initialFilePaths []string,
 	httpClient *http.Client,
 	url, token string) (Differential, error) {
-
 	if allowedExtensions == nil {
 		allowedExtensions = make(map[string]bool)
 	}
@@ -214,6 +215,7 @@ func NewDifferential(
 		if err != nil {
 			return Differential{}, fmt.Errorf("ioutil.ReadFile: %w", err)
 		}
+
 		previousChecksum[p] = md5.Sum(b) //nolint:gosec
 		previousContents[p] = b
 	}
