@@ -7,11 +7,12 @@ import (
 	"path/filepath"
 	"sync"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-plugin-api/cluster"
 	"github.com/mattermost/mattermost-plugin-api/experimental/command"
 	"github.com/mattermost/mattermost-plugin-nagios/go-nagios/nagios"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin"
 )
 
 // Plugin implements the interface expected by the Mattermost server to
@@ -73,7 +74,9 @@ func (p *Plugin) getProfileImage() ([]byte, error) {
 }
 
 func (p *Plugin) OnActivate() error {
-	botUserID, err := p.Helpers.EnsureBot(&model.Bot{
+	client := pluginapi.NewClient(p.API, p.Driver)
+
+	botUserID, err := client.Bot.EnsureBot(&model.Bot{
 		Username:    "nagios",
 		DisplayName: "Nagios",
 		Description: "Created by the Nagios Plugin.",
