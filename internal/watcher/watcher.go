@@ -20,7 +20,7 @@ import (
 // GetAllInDirectory recursively returns all paths to files and directories in
 // dir which have allowed extensions. It returns nil, nil, <err> on
 // the first error encountered.
-func GetAllInDirectory(dir string, allowedExtensions map[string]bool) (
+func GetAllInDirectory(dir string, allowedExtensions []string) (
 	[]string,
 	[]string,
 	error) {
@@ -36,7 +36,7 @@ func GetAllInDirectory(dir string, allowedExtensions map[string]bool) (
 			return nil
 		}
 
-		if _, ok := allowedExtensions[filepath.Ext(path)]; !ok {
+		if !isExtensionAllowed(allowedExtensions, filepath.Ext(path)) {
 			return nil
 		}
 
@@ -50,6 +50,15 @@ func GetAllInDirectory(dir string, allowedExtensions map[string]bool) (
 	}
 
 	return files, directories, nil
+}
+
+func isExtensionAllowed(allowedExtensions []string, ext string) bool {
+	for _, v := range allowedExtensions {
+		if v == ext {
+			return true
+		}
+	}
+	return false
 }
 
 // WatchFuncProvider for interfacing WatchFn for WatchDirectories
@@ -104,7 +113,7 @@ func WatchDirectories(
 // Differential implements WatchFuncProvider. Use NewDifferential to initialize
 // Differential.
 type Differential struct {
-	allowedExtensions map[string]bool
+	allowedExtensions []string
 	previousChecksum  map[string][16]byte
 	previousContents  map[string][]byte
 	client            *http.Client
@@ -163,7 +172,7 @@ func (d Differential) sendDiff(path string, diff string) error {
 
 // WatchFn for reading files in the watched folder and look for difference from the last update
 func (d Differential) WatchFn(path string) error {
-	if _, ok := d.allowedExtensions[filepath.Ext(path)]; !ok {
+	if !isExtensionAllowed(d.allowedExtensions, filepath.Ext(path)) {
 		return nil
 	}
 
@@ -199,12 +208,12 @@ func (d Differential) WatchFn(path string) error {
 
 // NewDifferential returns initialized Differential.
 func NewDifferential(
-	allowedExtensions map[string]bool,
+	allowedExtensions []string,
 	initialFilePaths []string,
 	httpClient *http.Client,
 	url, token string) (Differential, error) {
 	if allowedExtensions == nil {
-		allowedExtensions = make(map[string]bool)
+		allowedExtensions = make([]string, 0)
 	}
 
 	previousChecksum := make(map[string][16]byte)

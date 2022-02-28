@@ -20,7 +20,7 @@ func TestGetAllInDirectory(t *testing.T) {
 		expectedFilesCount = 2 * filesMultiplier
 	)
 
-	allowedExtensions := map[string]bool{".cfg": false}
+	allowedExtensions := []string{".cfg"}
 
 	baseDir, err := ioutil.TempDir("", "watcher_test_*")
 	if err != nil {
@@ -75,7 +75,7 @@ func TestGetAllInDirectory(t *testing.T) {
 
 	t.Run("Ignored extensions", func(t *testing.T) {
 		for _, f := range files {
-			if _, ok := allowedExtensions[filepath.Ext(f)]; !ok {
+			if !isExtensionAllowed(allowedExtensions, filepath.Ext(f)) {
 				assert.Fail(t, "ignored file included")
 				return
 			}
@@ -112,7 +112,7 @@ func TestWatchDirectories(t *testing.T) {
 		t.Fatalf("TempFile: %v", err)
 	}
 
-	_, directories, err := GetAllInDirectory(baseDir, map[string]bool{".cfg": false})
+	_, directories, err := GetAllInDirectory(baseDir, []string{".cfg"})
 	if err != nil {
 		t.Fatalf("GetAllInDirectory: %v", err)
 	}
@@ -148,7 +148,7 @@ func TestWatchDirectories(t *testing.T) {
 func TestNewDifferential(t *testing.T) {
 	t.Run("Empty struct", func(t *testing.T) {
 		expected := Differential{
-			allowedExtensions: make(map[string]bool),
+			allowedExtensions: make([]string, 0),
 			previousChecksum:  make(map[string][16]byte),
 			previousContents:  make(map[string][]byte),
 			client:            nil,
@@ -199,7 +199,7 @@ func TestNewDifferential(t *testing.T) {
 		}
 
 		expected := Differential{
-			allowedExtensions: map[string]bool{".cfg": false},
+			allowedExtensions: []string{".cfg"},
 			previousChecksum:  previousChecksum,
 			previousContents:  previousContents,
 			client:            http.DefaultClient,
@@ -207,12 +207,12 @@ func TestNewDifferential(t *testing.T) {
 			token:             "2137",
 		}
 
-		files, _, err := GetAllInDirectory(baseDir, map[string]bool{".cfg": false})
+		files, _, err := GetAllInDirectory(baseDir, []string{".cfg"})
 		if err != nil {
 			t.Fatalf("GetAllInDirectory: %v", err)
 		}
 
-		actual, err := NewDifferential(map[string]bool{".cfg": false}, files, http.DefaultClient, "dummy", "2137")
+		actual, err := NewDifferential([]string{".cfg"}, files, http.DefaultClient, "dummy", "2137")
 		if err != nil {
 			t.Fatalf("NewDifferential: %v", err)
 		}

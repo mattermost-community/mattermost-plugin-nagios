@@ -26,9 +26,7 @@ func main() {
 		log.Fatal("dir argument must be an absolute path, like /usr/local/nagios/etc/")
 	}
 
-	allowedExtensions := map[string]bool{
-		".cfg": false,
-	}
+	allowedExtensions := []string{".cfg"}
 
 	files, directories, err := watcher.GetAllInDirectory(baseDir, allowedExtensions)
 	if err != nil {
