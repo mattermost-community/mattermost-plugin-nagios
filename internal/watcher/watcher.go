@@ -179,7 +179,7 @@ func (d Differential) WatchFn(path string) error {
 	// This is to allow for changes to propagate on the filesystem. If the file
 	// is large, the write won't be atomic. It will happen in, for example, 4096
 	// bytes chunks. 1 ms should be enough.
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(time.Millisecond)
 
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
