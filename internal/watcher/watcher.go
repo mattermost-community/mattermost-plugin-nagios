@@ -61,7 +61,7 @@ func isExtensionAllowed(allowedExtensions []string, ext string) bool {
 	return false
 }
 
-// WatchFuncProvider for interfacing WatchFn for WatchDirectories
+// WatchFuncProvider provides functionality to watch a directory.
 type WatchFuncProvider interface {
 	WatchFn(path string) error
 }
