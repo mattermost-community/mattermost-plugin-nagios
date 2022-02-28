@@ -154,6 +154,11 @@ func TestNewDifferential(t *testing.T) {
 			client:            nil,
 			url:               "",
 			token:             "",
+			diffSender: RemoteDiffSender{
+				url:    "",
+				token:  "",
+				client: nil,
+			},
 		}
 
 		actual, err := NewDifferential(nil, nil, nil, "", "")
@@ -205,6 +210,11 @@ func TestNewDifferential(t *testing.T) {
 			client:            http.DefaultClient,
 			url:               "dummy",
 			token:             "2137",
+			diffSender: RemoteDiffSender{
+				url:    "dummy",
+				token:  "2137",
+				client: http.DefaultClient,
+			},
 		}
 
 		files, _, err := GetAllInDirectory(baseDir, []string{".cfg"})
@@ -219,4 +229,59 @@ func TestNewDifferential(t *testing.T) {
 
 		assert.Equal(t, expected, actual)
 	})
+}
+
+func TestDifferentialIgnore(t *testing.T) {
+	baseDir, err := ioutil.TempDir("", "watcher_test_*")
+	if err != nil {
+		t.Fatalf("ioutil.TempDir: %v", err)
+	}
+	defer os.RemoveAll(baseDir)
+
+	file, err := ioutil.TempFile(baseDir, "*")
+	if err != nil {
+		t.Fatalf("ioutil.TempFile: %v", err)
+	}
+	defer file.Close()
+
+	d, err := NewDifferential([]string{".cfg"}, []string{}, http.DefaultClient, "dummy", "2137")
+	if err != nil {
+		t.Fatalf("NewDifferential: %v", err)
+	}
+
+	if err = d.WatchFn(filepath.Join(baseDir, file.Name())); err != nil {
+		t.Fatalf("WatchFn: %v", err)
+	}
+	assert.Equal(t, 0, len(d.previousChecksum))
+}
+
+type mockDiffSender struct{}
+
+func (d mockDiffSender) Send(path string, diff string) error {
+	return nil
+}
+
+func TestDifferentialFiltered(t *testing.T) {
+	baseDir, err := ioutil.TempDir("", "watcher_test_*")
+	if err != nil {
+		t.Fatalf("ioutil.TempDir: %v", err)
+	}
+	defer os.RemoveAll(baseDir)
+
+	file, err := ioutil.TempFile(baseDir, "*.cfg")
+	if err != nil {
+		t.Fatalf("ioutil.TempFile: %v", err)
+	}
+	defer file.Close()
+
+	d, err := NewDifferential([]string{".cfg"}, []string{}, http.DefaultClient, "dummy", "2137")
+	if err != nil {
+		t.Fatalf("NewDifferential: %v", err)
+	}
+	d.diffSender = mockDiffSender{}
+
+	if err = d.WatchFn(file.Name()); err != nil {
+		t.Fatalf("WatchFn: %v", err)
+	}
+	assert.Equal(t, 1, len(d.previousChecksum))
 }

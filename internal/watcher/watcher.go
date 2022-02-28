@@ -66,6 +66,56 @@ type WatchFuncProvider interface {
 	WatchFn(path string) error
 }
 
+// DiffSender sends diff to somewhere.
+type DiffSender interface {
+	Send(path string, diff string) error
+}
+
+// RemoteDiffSender sends diff to remote server.
+type RemoteDiffSender struct {
+	url    string
+	token  string
+	client *http.Client
+}
+
+// Send implements DiffSender.
+func (d RemoteDiffSender) Send(path string, diff string) error {
+	change := Change{
+		Name: filepath.Base(path),
+		Diff: diff,
+	}
+
+	b, err := json.Marshal(change)
+	if err != nil {
+		return fmt.Errorf("json.Marshal: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, d.url, bytes.NewReader(b))
+	if err != nil {
+		return fmt.Errorf("http.NewRequest: %w", err)
+	}
+
+	req.Header.Set("Content-Type", http.DetectContentType(b))
+	req.Header.Set(TokenHeader, d.token)
+
+	res, err := d.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("d.client.Do: %w", err)
+	}
+
+	defer res.Body.Close()
+
+	if _, err := io.Copy(ioutil.Discard, res.Body); err != nil {
+		return fmt.Errorf("io.Copy: %w", err)
+	}
+
+	if c := res.StatusCode; !checkStatusCode2xx(c) {
+		return fmt.Errorf("server returned non-2xx status code (%d)", c)
+	}
+
+	return nil
+}
+
 // WatchDirectories watches for changes in directories and calls WatchFn on
 // every change. It terminates after done is closed.
 func WatchDirectories(
@@ -118,6 +168,7 @@ type Differential struct {
 	previousContents  map[string][]byte
 	client            *http.Client
 	url, token        string
+	diffSender        DiffSender
 }
 
 // Change struct for send Difference
@@ -131,43 +182,6 @@ const TokenHeader = "X-Nagios-Plugin-Token" //nolint:gosec
 
 func checkStatusCode2xx(statusCode int) bool {
 	return statusCode >= http.StatusOK && statusCode < http.StatusMultipleChoices
-}
-
-func (d Differential) sendDiff(path string, diff string) error {
-	change := Change{
-		Name: filepath.Base(path),
-		Diff: diff,
-	}
-
-	b, err := json.Marshal(change)
-	if err != nil {
-		return fmt.Errorf("json.Marshal: %w", err)
-	}
-
-	req, err := http.NewRequest(http.MethodPost, d.url, bytes.NewReader(b))
-	if err != nil {
-		return fmt.Errorf("http.NewRequest: %w", err)
-	}
-
-	req.Header.Set("Content-Type", http.DetectContentType(b))
-	req.Header.Set(TokenHeader, d.token)
-
-	res, err := d.client.Do(req)
-	if err != nil {
-		return fmt.Errorf("d.client.Do: %w", err)
-	}
-
-	defer res.Body.Close()
-
-	if _, err := io.Copy(ioutil.Discard, res.Body); err != nil {
-		return fmt.Errorf("io.Copy: %w", err)
-	}
-
-	if c := res.StatusCode; !checkStatusCode2xx(c) {
-		return fmt.Errorf("server returned non-2xx status code (%d)", c)
-	}
-
-	return nil
 }
 
 // WatchFn for reading files in the watched folder and look for difference from the last update
@@ -194,7 +208,7 @@ func (d Differential) WatchFn(path string) error {
 
 	diff := cmp.Diff(string(d.previousContents[path]), string(contents))
 
-	if err := d.sendDiff(path, diff); err != nil {
+	if err := d.diffSender.Send(path, diff); err != nil {
 		return fmt.Errorf("d.sendDiff: %w", err)
 	}
 
@@ -215,7 +229,6 @@ func NewDifferential(
 	if allowedExtensions == nil {
 		allowedExtensions = make([]string, 0)
 	}
-
 	previousChecksum := make(map[string][16]byte)
 	previousContents := make(map[string][]byte)
 
@@ -236,5 +249,10 @@ func NewDifferential(
 		client:            httpClient,
 		url:               url,
 		token:             token,
+		diffSender: RemoteDiffSender{
+			url:    url,
+			token:  token,
+			client: httpClient,
+		},
 	}, nil
 }
