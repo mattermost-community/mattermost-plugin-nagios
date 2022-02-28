@@ -230,7 +230,7 @@ func NewDifferential(
 	if allowedExtensions == nil {
 		allowedExtensions = make([]string, 0)
 	}
-	
+
 	previousChecksum := make(map[string][16]byte)
 	previousContents := make(map[string][]byte)
 
