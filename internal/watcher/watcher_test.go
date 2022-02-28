@@ -268,6 +268,7 @@ func TestDifferentialFiltered(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ioutil.TempDir: %v", err)
 	}
+	
 	defer os.RemoveAll(baseDir)
 
 	file, err := ioutil.TempFile(baseDir, "*.cfg")
@@ -280,7 +281,7 @@ func TestDifferentialFiltered(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewDifferential: %v", err)
 	}
-	
+
 	d.diffSender = mockDiffSender{}
 
 	if err = d.WatchFn(file.Name()); err != nil {
