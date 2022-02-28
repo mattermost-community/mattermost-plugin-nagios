@@ -236,6 +236,7 @@ func TestDifferentialIgnore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ioutil.TempDir: %v", err)
 	}
+
 	defer os.RemoveAll(baseDir)
 
 	file, err := ioutil.TempFile(baseDir, "*")
@@ -252,6 +253,7 @@ func TestDifferentialIgnore(t *testing.T) {
 	if err = d.WatchFn(filepath.Join(baseDir, file.Name())); err != nil {
 		t.Fatalf("WatchFn: %v", err)
 	}
+
 	assert.Equal(t, 0, len(d.previousChecksum))
 }
 
@@ -278,10 +280,12 @@ func TestDifferentialFiltered(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewDifferential: %v", err)
 	}
+	
 	d.diffSender = mockDiffSender{}
 
 	if err = d.WatchFn(file.Name()); err != nil {
 		t.Fatalf("WatchFn: %v", err)
 	}
+
 	assert.Equal(t, 1, len(d.previousChecksum))
 }
