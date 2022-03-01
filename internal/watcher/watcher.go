@@ -172,7 +172,7 @@ type Differential struct {
 	diffSender        DiffSender
 }
 
-// Change struct for send Difference
+// Change represents a file differences from last modifications.
 type Change struct {
 	Name string
 	Diff string
