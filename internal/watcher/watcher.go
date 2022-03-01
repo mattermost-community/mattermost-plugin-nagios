@@ -196,6 +196,14 @@ func (d Differential) WatchFn(path string) error {
 	// bytes chunks. 1 ms should be enough.
 	time.Sleep(time.Millisecond)
 
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return fmt.Errorf("os.Stat: %w", err)
+	}
+	if fileInfo.Size() > 100*1024 {
+		return nil
+	}
+
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("ioutil.ReadFile: %w", err)
