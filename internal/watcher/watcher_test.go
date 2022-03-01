@@ -267,6 +267,7 @@ func (d *mockDiffSender) Send(path string, diff string) error {
 	defer d.calledMtx.Unlock()
 
 	d.called = true
+
 	return nil
 }
 
@@ -314,7 +315,8 @@ func TestDifferentialLargeFile(t *testing.T) {
 	}
 
 	testFile := filepath.Join(baseDir, "config.cfg")
-	err = ioutil.WriteFile(testFile, testContent, 0744)
+
+	err = ioutil.WriteFile(testFile, testContent, 0600)
 	if err != nil {
 		t.Fatalf("ioutil.WriteFile: %v", err)
 	}

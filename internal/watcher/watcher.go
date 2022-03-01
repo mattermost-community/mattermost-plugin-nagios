@@ -200,6 +200,7 @@ func (d Differential) WatchFn(path string) error {
 	if err != nil {
 		return fmt.Errorf("os.Stat: %w", err)
 	}
+
 	if fileInfo.Size() > 100*1024 {
 		return nil
 	}
