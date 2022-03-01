@@ -290,3 +290,36 @@ func TestDifferentialFiltered(t *testing.T) {
 
 	assert.Equal(t, 1, len(d.previousChecksum))
 }
+
+func TestDifferentialLargeFile(t *testing.T) {
+	baseDir, err := ioutil.TempDir("", "watcher_test_*")
+	if err != nil {
+		t.Fatalf("ioutil.TempDir: %v", err)
+	}
+
+	defer os.RemoveAll(baseDir)
+
+	testContent, err := ioutil.ReadFile("testdata/test-large-file.cfg")
+	if err != nil {
+		t.Fatalf("ioutil.ReadFile: %v", err)
+	}
+
+	testFile := filepath.Join(baseDir, "config.cfg")
+	err = ioutil.WriteFile(testFile, testContent, 0744)
+	if err != nil {
+		t.Fatalf("ioutil.WriteFile: %v", err)
+	}
+
+	d, err := NewDifferential([]string{".cfg"}, []string{}, http.DefaultClient, "dummy", "2137")
+	if err != nil {
+		t.Fatalf("NewDifferential: %v", err)
+	}
+
+	d.diffSender = mockDiffSender{}
+
+	if err = d.WatchFn(testFile); err != nil {
+		t.Fatalf("WatchFn: %v", err)
+	}
+
+	assert.Equal(t, 0, len(d.previousChecksum))
+}
