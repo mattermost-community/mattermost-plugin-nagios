@@ -154,7 +154,7 @@ func TestNewDifferential(t *testing.T) {
 			client:            nil,
 			url:               "",
 			token:             "",
-			diffSender: RemoteDiffSender{
+			diffSender: &RemoteDiffSender{
 				url:    "",
 				token:  "",
 				client: nil,
@@ -210,7 +210,7 @@ func TestNewDifferential(t *testing.T) {
 			client:            http.DefaultClient,
 			url:               "dummy",
 			token:             "2137",
-			diffSender: RemoteDiffSender{
+			diffSender: &RemoteDiffSender{
 				url:    "dummy",
 				token:  "2137",
 				client: http.DefaultClient,
@@ -257,9 +257,16 @@ func TestDifferentialIgnore(t *testing.T) {
 	assert.Equal(t, 0, len(d.previousChecksum))
 }
 
-type mockDiffSender struct{}
+type mockDiffSender struct {
+	called    bool
+	calledMtx sync.Mutex
+}
 
-func (d mockDiffSender) Send(path string, diff string) error {
+func (d *mockDiffSender) Send(path string, diff string) error {
+	d.calledMtx.Lock()
+	defer d.calledMtx.Unlock()
+
+	d.called = true
 	return nil
 }
 
@@ -282,12 +289,14 @@ func TestDifferentialFiltered(t *testing.T) {
 		t.Fatalf("NewDifferential: %v", err)
 	}
 
-	d.diffSender = mockDiffSender{}
+	mockedDiffSender := &mockDiffSender{}
+	d.diffSender = mockedDiffSender
 
 	if err = d.WatchFn(file.Name()); err != nil {
 		t.Fatalf("WatchFn: %v", err)
 	}
 
+	assert.True(t, mockedDiffSender.called)
 	assert.Equal(t, 1, len(d.previousChecksum))
 }
 
@@ -314,8 +323,6 @@ func TestDifferentialLargeFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewDifferential: %v", err)
 	}
-
-	d.diffSender = mockDiffSender{}
 
 	if err = d.WatchFn(testFile); err != nil {
 		t.Fatalf("WatchFn: %v", err)

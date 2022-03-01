@@ -80,7 +80,7 @@ type RemoteDiffSender struct {
 }
 
 // Send implements DiffSender.
-func (d RemoteDiffSender) Send(path string, diff string) error {
+func (d *RemoteDiffSender) Send(path string, diff string) error {
 	change := Change{
 		Name: filepath.Base(path),
 		Diff: diff,
@@ -259,7 +259,7 @@ func NewDifferential(
 		client:            httpClient,
 		url:               url,
 		token:             token,
-		diffSender: RemoteDiffSender{
+		diffSender: &RemoteDiffSender{
 			url:    url,
 			token:  token,
 			client: httpClient,
