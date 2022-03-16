@@ -18,9 +18,9 @@ const manifestStr = `
   "description": "Nagios plugin for Mattermost",
   "homepage_url": "https://github.com/mattermost/mattermost-plugin-nagios",
   "support_url": "https://github.com/mattermost/mattermost-plugin-nagios/issues",
-  "release_notes_url": "https://github.com/mattermost/mattermost-plugin-nagios/releases/tag/v1.1.0",
+  "release_notes_url": "https://github.com/mattermost/mattermost-plugin-nagios/releases/tag/v1.2.0",
   "icon_path": "assets/orbit-467260.svg",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "min_server_version": "5.37.0",
   "server": {
     "executables": {
