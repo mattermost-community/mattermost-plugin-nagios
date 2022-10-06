@@ -202,6 +202,7 @@ func (d Differential) WatchFn(path string) error {
 	}
 
 	if fileInfo.Size() > 100*1024 {
+		log.Printf("Rejected too big file, path: %v, size: %v", path, fileInfo.Size())
 		return nil
 	}
 
@@ -232,14 +233,9 @@ func (d Differential) WatchFn(path string) error {
 
 // NewDifferential returns initialized Differential.
 func NewDifferential(
-	allowedExtensions []string,
-	initialFilePaths []string,
+	allowedExtensions, initialFilePaths []string,
 	httpClient *http.Client,
 	url, token string) (Differential, error) {
-	if allowedExtensions == nil {
-		allowedExtensions = make([]string, 0)
-	}
-
 	previousChecksum := make(map[string][16]byte)
 	previousContents := make(map[string][]byte)
 
