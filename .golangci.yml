@@ -40,9 +40,6 @@ linters:
 
 issues:
   exclude-rules:
-    - path: server/configuration.go
-      linters:
-        - unused
     - path: _test\.go
       linters:
         - bodyclose
