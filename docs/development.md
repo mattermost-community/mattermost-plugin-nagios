@@ -6,6 +6,15 @@ If you are a Nagios admin/user and think there is something this plugin lacks or
 
 This plugin only contains a server portion. Read our documentation about the [Developer Workflow](https://developers.mattermost.com/extend/plugins/developer-workflow/) and [Developer Setup](https://developers.mattermost.com/extend/plugins/developer-setup/) for more information about developing and extending plugins.
 
+### Running a Nagios server with Docker
+
+There is a [docker-compose.yml](https://github.com/mattermost/mattermost-plugin-naguis/blob/master/dev/docker-compose.yml) in the `dev` folder of the repository, configured to run a Nagios server for development. You can run `make nagios` in the root of the repository to spin up the Nagios server. The Nagios web application will be served at http://localhost:8080.
+
+You can login with these credentials:
+
+- Username: `nagiosadmin`
+- Password: `nagios`
+
 ## Developing the watcher
 
 To build the watcher, you can use the following command:
@@ -41,3 +50,4 @@ export MM_SERVICESETTINGS_SITEURL=http://localhost:8065
 export MM_ADMIN_TOKEN=j44acwd8obn78cdcx7koid4jkr
 make deploy
 ```
+
