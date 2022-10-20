@@ -1,0 +1,1 @@
+FROM jasonrivers/nagios
