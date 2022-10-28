@@ -26,14 +26,14 @@ func main() {
 		log.Fatal("dir argument must be an absolute path, like /usr/local/nagios/etc/")
 	}
 
-	ignoredExtensions := []string{".swp"}
+	allowedExtensions := []string{".cfg"}
 
-	files, directories, err := watcher.GetAllInDirectory(baseDir, ignoredExtensions)
+	files, directories, err := watcher.GetAllInDirectory(baseDir, allowedExtensions)
 	if err != nil {
 		log.Fatalf("GetAllInDirectory: %v", err)
 	}
 
-	differential, err := watcher.NewDifferential(ignoredExtensions, files, http.DefaultClient, *url, *token)
+	differential, err := watcher.NewDifferential(allowedExtensions, files, http.DefaultClient, *url, *token)
 	if err != nil {
 		log.Fatalf("NewDifferential: %v", err)
 	}

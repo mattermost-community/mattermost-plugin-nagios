@@ -27,7 +27,7 @@ Regenerate the token for the configuration files watcher:
 
 Adjust `dir` (default if not set: `/usr/local/nagios/etc/`), `url`, and `token` flags to your setup.
 
-```shell script
+```sh
 sudo bash -c 'cat << EOF > /etc/systemd/system/mattermost-plugin-nagios-watcher.service
 [Unit]
 Description=Nagios configuration files monitoring service
@@ -44,7 +44,7 @@ EOF'
 
 ##### Starting the watcher
 
-```shell script
+```sh
 systemctl daemon-reload
 systemctl enable mattermost-plugin-nagios-watcher.service
 systemctl start  mattermost-plugin-nagios-watcher.service
