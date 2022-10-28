@@ -19,7 +19,7 @@ You can login with these credentials:
 
 To build the watcher, you can use the following command:
 
-```shell script
+```sh
 env GOOS=linux GOARCH=amd64 go build -o dist/watcherX.Y.Z.linux-amd64 -a -v cmd/watcher/main.go
 ```
 
@@ -37,7 +37,7 @@ To avoid having to manually install your plugin, build and deploy your plugin us
 
 If your Mattermost server is running locally, you can enable [local mode](https://docs.mattermost.com/administration/mmctl-cli-tool.html#local-mode) to streamline deploying your plugin. After configuring it, just run:
 
-```shell script
+```sh
 make deploy
 ```
 
@@ -45,7 +45,7 @@ make deploy
 
 Alternatively, you can authenticate with the server's API with a [personal access token](https://docs.mattermost.com/developer/personal-access-tokens.html):
 
-```shell script
+```sh
 export MM_SERVICESETTINGS_SITEURL=http://localhost:8065
 export MM_ADMIN_TOKEN=j44acwd8obn78cdcx7koid4jkr
 make deploy
