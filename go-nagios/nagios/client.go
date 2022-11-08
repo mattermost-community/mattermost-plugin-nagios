@@ -3,6 +3,7 @@ package nagios
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 )
@@ -52,7 +53,7 @@ func (c Client) Query(b QueryBuilder, v interface{}) error {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		// io.Copy(ioutil.Discard, res.Body)
+		_, _ = io.Copy(io.Discard, res.Body)
 		return fmt.Errorf("non-200 response status code (%d)", res.StatusCode)
 	}
 

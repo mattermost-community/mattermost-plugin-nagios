@@ -2,7 +2,6 @@ package watcher
 
 import (
 	"crypto/md5" //nolint:gosec
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -22,40 +21,40 @@ func TestGetAllInDirectory(t *testing.T) {
 
 	allowedExtensions := []string{".cfg"}
 
-	baseDir, err := ioutil.TempDir("", "watcher_test_*")
+	baseDir, err := os.MkdirTemp("", "watcher_test_*")
 	if err != nil {
-		t.Fatalf("ioutil.TempDir: %v", err)
+		t.Fatalf("os.MkdirTemp: %v", err)
 	}
 
 	defer os.RemoveAll(baseDir)
 
-	subDir, err := ioutil.TempDir(baseDir, "watcher_test_*")
+	subDir, err := os.MkdirTemp(baseDir, "watcher_test_*")
 	if err != nil {
-		t.Fatalf("ioutil.TempDir: %v", err)
+		t.Fatalf("os.MkdirTemp: %v", err)
 	}
 
 	for i := 0; i < filesMultiplier; i++ {
-		if _, err = ioutil.TempFile(baseDir, "*.cfg"); err != nil {
+		if _, err = os.CreateTemp(baseDir, "*.cfg"); err != nil {
 			t.Fatalf("TempFile: %v", err)
 		}
 
-		if _, err = ioutil.TempFile(baseDir, "*.swp"); err != nil {
+		if _, err = os.CreateTemp(baseDir, "*.swp"); err != nil {
 			t.Fatalf("TempFile: %v", err)
 		}
 
-		if _, err = ioutil.TempFile(baseDir, "*"); err != nil {
+		if _, err = os.CreateTemp(baseDir, "*"); err != nil {
 			t.Fatalf("TempFile: %v", err)
 		}
 
-		if _, err = ioutil.TempFile(subDir, "*"); err != nil {
+		if _, err = os.CreateTemp(subDir, "*"); err != nil {
 			t.Fatalf("TempFile: %v", err)
 		}
 
-		if _, err = ioutil.TempFile(subDir, "*.cfg"); err != nil {
+		if _, err = os.CreateTemp(subDir, "*.cfg"); err != nil {
 			t.Fatalf("TempFile: %v", err)
 		}
 
-		if _, err = ioutil.TempFile(subDir, "*.swp"); err != nil {
+		if _, err = os.CreateTemp(subDir, "*.swp"); err != nil {
 			t.Fatalf("TempFile: %v", err)
 		}
 	}
@@ -100,14 +99,14 @@ func (m *mockWatchFuncProvider) WatchFn(string) error {
 func TestWatchDirectories(t *testing.T) {
 	mock := &mockWatchFuncProvider{}
 
-	baseDir, err := ioutil.TempDir("", "watcher_test_*")
+	baseDir, err := os.MkdirTemp("", "watcher_test_*")
 	if err != nil {
-		t.Fatalf("ioutil.TempDir: %v", err)
+		t.Fatalf("os.MkdirTemp: %v", err)
 	}
 
 	defer os.RemoveAll(baseDir)
 
-	f, err := ioutil.TempFile(baseDir, "*")
+	f, err := os.CreateTemp(baseDir, "*")
 	if err != nil {
 		t.Fatalf("TempFile: %v", err)
 	}
@@ -173,9 +172,9 @@ func TestNewDifferential(t *testing.T) {
 		previousChecksum := make(map[string][16]byte)
 		previousContents := make(map[string][]byte)
 
-		baseDir, err := ioutil.TempDir("", "watcher_test_*")
+		baseDir, err := os.MkdirTemp("", "watcher_test_*")
 		if err != nil {
-			t.Fatalf("ioutil.TempDir: %v", err)
+			t.Fatalf("os.MkdirTemp: %v", err)
 		}
 
 		defer os.RemoveAll(baseDir)
@@ -183,7 +182,7 @@ func TestNewDifferential(t *testing.T) {
 		for i := 0; i < 10; i++ {
 			var f *os.File
 
-			f, err = ioutil.TempFile(baseDir, "*.cfg")
+			f, err = os.CreateTemp(baseDir, "*.cfg")
 			if err != nil {
 				t.Fatalf("TempFile: %v", err)
 			}
@@ -194,9 +193,9 @@ func TestNewDifferential(t *testing.T) {
 
 			var b []byte
 
-			b, err = ioutil.ReadFile(f.Name())
+			b, err = os.ReadFile(f.Name())
 			if err != nil {
-				t.Fatalf("ioutil.ReadFile: %v", err)
+				t.Fatalf("os.ReadFile: %v", err)
 			}
 
 			previousChecksum[f.Name()] = md5.Sum(b) //nolint:gosec
@@ -232,16 +231,16 @@ func TestNewDifferential(t *testing.T) {
 }
 
 func TestDifferentialIgnore(t *testing.T) {
-	baseDir, err := ioutil.TempDir("", "watcher_test_*")
+	baseDir, err := os.MkdirTemp("", "watcher_test_*")
 	if err != nil {
-		t.Fatalf("ioutil.TempDir: %v", err)
+		t.Fatalf("os.MkdirTemp: %v", err)
 	}
 
 	defer os.RemoveAll(baseDir)
 
-	file, err := ioutil.TempFile(baseDir, "*")
+	file, err := os.CreateTemp(baseDir, "*")
 	if err != nil {
-		t.Fatalf("ioutil.TempFile: %v", err)
+		t.Fatalf("os.CreateTemp: %v", err)
 	}
 	defer file.Close()
 
@@ -272,16 +271,16 @@ func (d *mockDiffSender) Send(path string, diff string) error {
 }
 
 func TestDifferentialFiltered(t *testing.T) {
-	baseDir, err := ioutil.TempDir("", "watcher_test_*")
+	baseDir, err := os.MkdirTemp("", "watcher_test_*")
 	if err != nil {
-		t.Fatalf("ioutil.TempDir: %v", err)
+		t.Fatalf("os.MkdirTemp: %v", err)
 	}
 
 	defer os.RemoveAll(baseDir)
 
-	file, err := ioutil.TempFile(baseDir, "*.cfg")
+	file, err := os.CreateTemp(baseDir, "*.cfg")
 	if err != nil {
-		t.Fatalf("ioutil.TempFile: %v", err)
+		t.Fatalf("ios.CreateTemp: %v", err)
 	}
 	defer file.Close()
 
@@ -302,23 +301,23 @@ func TestDifferentialFiltered(t *testing.T) {
 }
 
 func TestDifferentialLargeFile(t *testing.T) {
-	baseDir, err := ioutil.TempDir("", "watcher_test_*")
+	baseDir, err := os.MkdirTemp("", "watcher_test_*")
 	if err != nil {
-		t.Fatalf("ioutil.TempDir: %v", err)
+		t.Fatalf("os.MkdirTemp: %v", err)
 	}
 
 	defer os.RemoveAll(baseDir)
 
-	testContent, err := ioutil.ReadFile("testdata/test-large-file.cfg")
+	testContent, err := os.ReadFile("testdata/test-large-file.cfg")
 	if err != nil {
-		t.Fatalf("ioutil.ReadFile: %v", err)
+		t.Fatalf("os.ReadFile: %v", err)
 	}
 
 	testFile := filepath.Join(baseDir, "config.cfg")
 
-	err = ioutil.WriteFile(testFile, testContent, 0600)
+	err = os.WriteFile(testFile, testContent, 0600)
 	if err != nil {
-		t.Fatalf("ioutil.WriteFile: %v", err)
+		t.Fatalf("os.WriteFile: %v", err)
 	}
 
 	d, err := NewDifferential([]string{".cfg"}, []string{}, http.DefaultClient, "dummy", "2137")
