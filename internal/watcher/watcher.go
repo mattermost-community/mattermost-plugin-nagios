@@ -17,41 +17,30 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func getIgnoredExtensions(extensions []string) map[string]struct{} {
-	lookup := make(map[string]struct{})
-
-	for _, e := range extensions {
-		lookup[e] = struct{}{}
-	}
-
-	return lookup
-}
-
 // GetAllInDirectory recursively returns all paths to files and directories in
-// dir (excluding files with ignored extensions). It returns nil, nil, <err> on
+// dir which have allowed extensions. It returns nil, nil, <err> on
 // the first error encountered.
-func GetAllInDirectory(dir string, ignoredExtensions []string) (
+func GetAllInDirectory(dir string, allowedExtensions []string) (
 	[]string,
 	[]string,
 	error) {
 	var files, directories []string
-
-	ignoredExtensionsLookup := getIgnoredExtensions(ignoredExtensions)
 
 	walkFn := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if _, ok := ignoredExtensionsLookup[filepath.Ext(path)]; ok {
+		if info.IsDir() {
+			directories = append(directories, path)
 			return nil
 		}
 
-		if info.IsDir() {
-			directories = append(directories, path)
-		} else {
-			files = append(files, path)
+		if !isExtensionAllowed(allowedExtensions, filepath.Ext(path)) {
+			return nil
 		}
+
+		files = append(files, path)
 
 		return nil
 	}
@@ -63,8 +52,69 @@ func GetAllInDirectory(dir string, ignoredExtensions []string) (
 	return files, directories, nil
 }
 
+func isExtensionAllowed(allowedExtensions []string, ext string) bool {
+	for _, v := range allowedExtensions {
+		if v == ext {
+			return true
+		}
+	}
+
+	return false
+}
+
+// WatchFuncProvider provides functionality to watch a directory.
 type WatchFuncProvider interface {
 	WatchFn(path string) error
+}
+
+// DiffSender sends diff to somewhere.
+type DiffSender interface {
+	Send(path string, diff string) error
+}
+
+// RemoteDiffSender sends diff to remote server.
+type RemoteDiffSender struct {
+	url    string
+	token  string
+	client *http.Client
+}
+
+// Send implements DiffSender.
+func (d *RemoteDiffSender) Send(path string, diff string) error {
+	change := Change{
+		Name: filepath.Base(path),
+		Diff: diff,
+	}
+
+	b, err := json.Marshal(change)
+	if err != nil {
+		return fmt.Errorf("json.Marshal: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, d.url, bytes.NewReader(b))
+	if err != nil {
+		return fmt.Errorf("http.NewRequest: %w", err)
+	}
+
+	req.Header.Set("Content-Type", http.DetectContentType(b))
+	req.Header.Set(TokenHeader, d.token)
+
+	res, err := d.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("d.client.Do: %w", err)
+	}
+
+	defer res.Body.Close()
+
+	if _, err := io.Copy(ioutil.Discard, res.Body); err != nil {
+		return fmt.Errorf("io.Copy: %w", err)
+	}
+
+	if c := res.StatusCode; !checkStatusCode2xx(c) {
+		return fmt.Errorf("server returned non-2xx status code (%d)", c)
+	}
+
+	return nil
 }
 
 // WatchDirectories watches for changes in directories and calls WatchFn on
@@ -114,63 +164,30 @@ func WatchDirectories(
 // Differential implements WatchFuncProvider. Use NewDifferential to initialize
 // Differential.
 type Differential struct {
-	ignoredExtensions map[string]struct{}
+	allowedExtensions []string
 	previousChecksum  map[string][16]byte
 	previousContents  map[string][]byte
 	client            *http.Client
 	url, token        string
+	diffSender        DiffSender
 }
 
+// Change represents a file differences from last modifications.
 type Change struct {
 	Name string
 	Diff string
 }
 
+// TokenHeader for setting Header send Diff
 const TokenHeader = "X-Nagios-Plugin-Token" //nolint:gosec
 
 func checkStatusCode2xx(statusCode int) bool {
 	return statusCode >= http.StatusOK && statusCode < http.StatusMultipleChoices
 }
 
-func (d Differential) sendDiff(path string, diff string) error {
-	change := Change{
-		Name: filepath.Base(path),
-		Diff: diff,
-	}
-
-	b, err := json.Marshal(change)
-	if err != nil {
-		return fmt.Errorf("json.Marshal: %w", err)
-	}
-
-	req, err := http.NewRequest(http.MethodPost, d.url, bytes.NewReader(b))
-	if err != nil {
-		return fmt.Errorf("http.NewRequest: %w", err)
-	}
-
-	req.Header.Set("Content-Type", http.DetectContentType(b))
-	req.Header.Set(TokenHeader, d.token)
-
-	res, err := d.client.Do(req)
-	if err != nil {
-		return fmt.Errorf("d.client.Do: %w", err)
-	}
-
-	defer res.Body.Close()
-
-	if _, err := io.Copy(ioutil.Discard, res.Body); err != nil {
-		return fmt.Errorf("io.Copy: %w", err)
-	}
-
-	if c := res.StatusCode; !checkStatusCode2xx(c) {
-		return fmt.Errorf("server returned non-2xx status code (%d)", c)
-	}
-
-	return nil
-}
-
+// WatchFn for reading files in the watched folder and look for difference from the last update
 func (d Differential) WatchFn(path string) error {
-	if _, ok := d.ignoredExtensions[filepath.Ext(path)]; ok {
+	if !isExtensionAllowed(d.allowedExtensions, filepath.Ext(path)) {
 		return nil
 	}
 
@@ -178,6 +195,16 @@ func (d Differential) WatchFn(path string) error {
 	// is large, the write won't be atomic. It will happen in, for example, 4096
 	// bytes chunks. 1 ms should be enough.
 	time.Sleep(time.Millisecond)
+
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return fmt.Errorf("os.Stat: %w", err)
+	}
+
+	if fileInfo.Size() > 100*1024 {
+		log.Printf("Rejected too big file, path: %v, size: %v", path, fileInfo.Size())
+		return nil
+	}
 
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -192,7 +219,7 @@ func (d Differential) WatchFn(path string) error {
 
 	diff := cmp.Diff(string(d.previousContents[path]), string(contents))
 
-	if err := d.sendDiff(path, diff); err != nil {
+	if err := d.diffSender.Send(path, diff); err != nil {
 		return fmt.Errorf("d.sendDiff: %w", err)
 	}
 
@@ -206,7 +233,7 @@ func (d Differential) WatchFn(path string) error {
 
 // NewDifferential returns initialized Differential.
 func NewDifferential(
-	ignoredExtensions, initialFilePaths []string,
+	allowedExtensions, initialFilePaths []string,
 	httpClient *http.Client,
 	url, token string) (Differential, error) {
 	previousChecksum := make(map[string][16]byte)
@@ -223,11 +250,16 @@ func NewDifferential(
 	}
 
 	return Differential{
-		ignoredExtensions: getIgnoredExtensions(ignoredExtensions),
+		allowedExtensions: allowedExtensions,
 		previousChecksum:  previousChecksum,
 		previousContents:  previousContents,
 		client:            httpClient,
 		url:               url,
 		token:             token,
+		diffSender: &RemoteDiffSender{
+			url:    url,
+			token:  token,
+			client: httpClient,
+		},
 	}, nil
 }

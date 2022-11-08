@@ -1,0 +1,6 @@
+version: '3'
+services:
+    nagios:
+        image: jasonrivers/nagios
+        ports:
+            - "8080:80"
