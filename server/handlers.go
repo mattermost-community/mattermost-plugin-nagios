@@ -262,7 +262,7 @@ func (p *Plugin) getLogs(parameters []string) string {
 	c, err := getLogsLimit(p.API)
 	if err != nil {
 		p.API.LogError("getLogsLimit", logErrorKey, err)
-		return gettingLogsUnsuccessful
+		return gettingLogsUnsuccessfulMessage(err.Error())
 	}
 
 	hostName, serviceDescription, message, ok := getLogsSpecific(parameters[1:])
@@ -273,7 +273,7 @@ func (p *Plugin) getLogs(parameters []string) string {
 	d, err := getLogsStartTime(p.API)
 	if err != nil {
 		p.API.LogError("getLogsStartTime", logErrorKey, err)
-		return gettingLogsUnsuccessful
+		return gettingLogsUnsuccessfulMessage(err.Error())
 	}
 
 	now := time.Now()
@@ -298,7 +298,7 @@ func (p *Plugin) getLogs(parameters []string) string {
 
 		if err := p.client.Query(q, &alerts); err != nil {
 			p.API.LogError("Query", logErrorKey, err)
-			return gettingLogsUnsuccessful
+			return gettingLogsUnsuccessfulMessage(err.Error())
 		}
 
 		return formatAlerts(alerts)
@@ -320,7 +320,7 @@ func (p *Plugin) getLogs(parameters []string) string {
 
 		if err := p.client.Query(q, &notifications); err != nil {
 			p.API.LogError("Query", logErrorKey, err)
-			return gettingLogsUnsuccessful
+			return gettingLogsUnsuccessfulMessage(err.Error())
 		}
 
 		return formatNotifications(notifications)
