@@ -46,7 +46,7 @@ const manifestStr = `
         "key": "NagiosUsername",
         "display_name": "Nagios Username",
         "type": "text",
-        "help_text": "The Nagios user used to authentiacte against your Nagios instance.",
+        "help_text": "The Nagios user used to authenticate against your Nagios instance.",
         "placeholder": "",
         "default": null
       },
