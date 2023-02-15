@@ -26,7 +26,7 @@ func addr(t *testing.T, address string) string {
 }
 
 func TestArchive(t *testing.T) {
-	c, err := nagios.NewClient(http.DefaultClient, addr(t, testInstanceAddress))
+	c, err := nagios.NewClient(http.DefaultClient, addr(t, testInstanceAddress), "someUsername", "somePasword")
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)
 	}
@@ -344,7 +344,7 @@ func TestArchive(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
-	c, err := nagios.NewClient(http.DefaultClient, addr(t, testInstanceAddress))
+	c, err := nagios.NewClient(http.DefaultClient, addr(t, testInstanceAddress), "someUsername", "somePasword")
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)
 	}
