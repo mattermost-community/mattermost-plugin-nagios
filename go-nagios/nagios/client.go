@@ -3,14 +3,17 @@ package nagios
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 )
 
 // Client represents a Nagios Core JSON CGIs client.
 type Client struct {
-	c *http.Client
-	u *url.URL
+	c        *http.Client
+	u        *url.URL
+	username string
+	password string
 }
 
 func cloneURLToPath(u *url.URL) *url.URL {
@@ -41,6 +44,8 @@ func (c Client) Query(b QueryBuilder, v interface{}) error {
 		return fmt.Errorf("http.NewRequest: %w", err)
 	}
 
+	req.SetBasicAuth(c.username, c.password)
+
 	res, err := c.c.Do(req)
 	if err != nil {
 		return fmt.Errorf("c.c.Do: %w", err)
@@ -48,7 +53,7 @@ func (c Client) Query(b QueryBuilder, v interface{}) error {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		// io.Copy(ioutil.Discard, res.Body)
+		_, _ = io.Copy(io.Discard, res.Body)
 		return fmt.Errorf("non-200 response status code (%d)", res.StatusCode)
 	}
 
@@ -63,14 +68,16 @@ func (c Client) Query(b QueryBuilder, v interface{}) error {
 }
 
 // NewClient returns initialized Client and any error encountered.
-func NewClient(client *http.Client, address string) (*Client, error) {
+func NewClient(client *http.Client, address, username, password string) (*Client, error) {
 	u, err := url.Parse(address)
 	if err != nil {
 		return nil, fmt.Errorf("url.Parse: %w", err)
 	}
 
 	return &Client{
-		c: client,
-		u: cloneURLToPath(u),
+		c:        client,
+		u:        cloneURLToPath(u),
+		username: username,
+		password: password,
 	}, nil
 }

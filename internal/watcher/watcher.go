@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -106,7 +105,7 @@ func (d *RemoteDiffSender) Send(path string, diff string) error {
 
 	defer res.Body.Close()
 
-	if _, err := io.Copy(ioutil.Discard, res.Body); err != nil {
+	if _, err := io.Copy(io.Discard, res.Body); err != nil {
 		return fmt.Errorf("io.Copy: %w", err)
 	}
 
@@ -206,9 +205,9 @@ func (d Differential) WatchFn(path string) error {
 		return nil
 	}
 
-	contents, err := ioutil.ReadFile(path)
+	contents, err := os.ReadFile(path)
 	if err != nil {
-		return fmt.Errorf("ioutil.ReadFile: %w", err)
+		return fmt.Errorf("os.ReadFile: %w", err)
 	}
 
 	checksum := md5.Sum(contents) //nolint:gosec
@@ -240,9 +239,9 @@ func NewDifferential(
 	previousContents := make(map[string][]byte)
 
 	for _, p := range initialFilePaths {
-		b, err := ioutil.ReadFile(p)
+		b, err := os.ReadFile(p)
 		if err != nil {
-			return Differential{}, fmt.Errorf("ioutil.ReadFile: %w", err)
+			return Differential{}, fmt.Errorf("os.ReadFile: %w", err)
 		}
 
 		previousChecksum[p] = md5.Sum(b) //nolint:gosec

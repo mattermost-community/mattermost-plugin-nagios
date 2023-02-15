@@ -24,6 +24,8 @@ import (
 // rewrite Clone as a deep copy appropriate for your types.
 type configuration struct {
 	NagiosURL              string
+	NagiosUsername         string
+	NagiosPassword         string
 	Token                  string
 	InitialLogsLimit       int
 	InitialLogsStartTime   int
@@ -119,7 +121,7 @@ func (p *Plugin) OnConfigurationChange() error {
 		return err
 	}
 
-	c, err := nagios.NewClient(http.DefaultClient, config.NagiosURL)
+	c, err := nagios.NewClient(http.DefaultClient, config.NagiosURL, config.NagiosUsername, config.NagiosPassword)
 	if err != nil {
 		return fmt.Errorf("nagios.NewClient: %w", err)
 	}

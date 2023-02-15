@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"sync"
 
@@ -65,9 +65,9 @@ func (p *Plugin) getProfileImage() ([]byte, error) {
 
 	// NOTICE: We don't use any of the Nagios logos to avoid legal issues.
 	// Instead, we use an image resembling a part of the Nagios Core logo.
-	file, err := ioutil.ReadFile(filepath.Join(path, "assets", "orbit-467260.png"))
+	file, err := os.ReadFile(filepath.Join(path, "assets", "orbit-467260.png"))
 	if err != nil {
-		return nil, fmt.Errorf("ioutil.ReadFile: %w", err)
+		return nil, fmt.Errorf("os.ReadFile: %w", err)
 	}
 
 	return file, nil

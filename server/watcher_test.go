@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -24,7 +24,7 @@ func TestServeHTTP(t *testing.T) {
 
 		assert.Equal(t, http.StatusBadRequest, result.StatusCode)
 
-		b, err := ioutil.ReadAll(result.Body)
+		b, err := io.ReadAll(result.Body)
 		assert.Nil(t, err)
 
 		assert.Equal(t, "Bad Request\n", string(b))
@@ -42,7 +42,7 @@ func TestServeHTTP(t *testing.T) {
 
 		assert.Equal(t, http.StatusNotImplemented, result.StatusCode)
 
-		b, err := ioutil.ReadAll(result.Body)
+		b, err := io.ReadAll(result.Body)
 		assert.Nil(t, err)
 
 		assert.Equal(t, "This functionality is not configured.\n", string(b))

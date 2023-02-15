@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func mustParseURL(rawurl string) *url.URL {
@@ -112,7 +114,7 @@ func TestNewClient(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewClient(tt.args.client, tt.args.address)
+			got, err := NewClient(tt.args.client, tt.args.address, "someUsername", "somePassword")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewClient() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -150,6 +152,11 @@ func TestClient_Query(t *testing.T) {
 		if err := json.NewEncoder(w).Encode(want); err != nil {
 			http.Error(w, http.StatusText(http.StatusTeapot), http.StatusTeapot)
 		}
+
+		username, password, ok := r.BasicAuth()
+		assert.Equal(t, "someUsername", username)
+		assert.Equal(t, "somePassword", password)
+		assert.True(t, ok)
 	}
 
 	mux := http.NewServeMux()
@@ -158,7 +165,7 @@ func TestClient_Query(t *testing.T) {
 	srv := httptest.NewTLSServer(mux)
 	defer srv.Close()
 
-	c, err := NewClient(srv.Client(), srv.URL)
+	c, err := NewClient(srv.Client(), srv.URL, "someUsername", "somePassword")
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)
 	}
