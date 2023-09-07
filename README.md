@@ -85,16 +85,15 @@ systemctl start  mattermost-plugin-nagios-watcher.service
 ```
 
 ### Get logs
+![logs](https://github.com/mattermost/mattermost-plugin-nagios/assets/74422101/7701b754-dc79-4199-9779-a52c173fbbba)
 
-![Screenshot of getting logs in action](../screenshots/logs.png)
 
 ### Receive system monitoring reports
+![reports](https://github.com/mattermost/mattermost-plugin-nagios/assets/74422101/c4369e89-a518-498a-841e-a608dacce40c)
 
-![Screenshot of receiving system monitoring reports in action](../screenshots/reports.png)
 
 ### Receive notifications about changes to the configuration
-
-![Screenshot of receiving notifications about changes to the configuration in action](../screenshots/changes.png)
+![changes](https://github.com/mattermost/mattermost-plugin-nagios/assets/74422101/d8920978-c184-45bd-b443-cdae31a979e4)
 
 Ultimately, this will make you or your team more productive and make the experience with Nagios smoother.
 
