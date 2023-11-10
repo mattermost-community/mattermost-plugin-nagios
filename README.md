@@ -5,35 +5,35 @@
 [![Release](https://img.shields.io/github/v/release/mattermost/mattermost-plugin-nagios)](https://github.com/mattermost/mattermost-plugin-nagios/releases/latest)
 [![HW](https://img.shields.io/github/issues/mattermost/mattermost-plugin-nagios/Up%20For%20Grabs?color=dark%20green&label=Help%20Wanted)](https://github.com/mattermost/mattermost-plugin-nagios/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3A%22Up+For+Grabs%22+label%3A%22Help+Wanted%22)
 
-_Help Wanted Tickets [here]_
+**Help Wanted Tickets [here]**
 
 # Contents
 
--   [Overview](#overview)
--   [Features](#features)
--   [Admin Guide](docs/admin-guide.md)
--   [End User Guide](#end-user-guide)
--   [Contribute](#contribute)
--   [License](#license)
--   [Security Vulnerability Disclosure](#security-vulnerability-disclosure)
--   [Get Help](#get-help)
+- [Overview](#overview)
+- [Features](#features)
+- [Admin Guide](docs/admin-guide.md)
+- [End User Guide](#end-user-guide)
+- [Contribute](#contribute)
+- [License](#license)
+- [Security Vulnerability Disclosure](#security-vulnerability-disclosure)
+- [Get Help](#get-help)
 
 ## Overview
 
 A Mattermost Plugin for Nagios to get logs, alerts, and notifications in Mattermost. Supports Nagios Core >= 4.4.x.
 
-_Maintainers_: [@amwolff](https://github.com/amwolff) & [@DanielSz50](https://github.com/DanielSz50)
+**Maintainers**: [@amwolff](https://github.com/amwolff) & [@DanielSz50](https://github.com/DanielSz50)
 
 ## Features
 
 This plugin allows you to:
 
--   Get logs from specific systems without leaving Mattermost.
--   Get alerts and notifications resembling the `showlog.cgi` UI instantly delivered.
--   Receive system monitoring reports on a subscribed channel.
--   Be frequently informed which hosts and services have an abnormal state.
--   Receive notifications about changes to the configuration on a subscribed channel.
--   Receive a diff between the old and the new version anytime a change has been made to Nagios configuration.
+- Get logs from specific systems without leaving Mattermost.
+- Get alerts and notifications resembling the `showlog.cgi` UI instantly delivered.
+- Receive system monitoring reports on a subscribed channel.
+- Be frequently informed which hosts and services have an abnormal state.
+- Receive notifications about changes to the configuration on a subscribed channel.
+- Receive a diff between the old and the new version anytime a change has been made to Nagios configuration.
 
 This README provides guidance on installation, configuration, and usage.
 
@@ -47,14 +47,14 @@ This README provides guidance on installation, configuration, and usage.
 
 ### Slash Commands Overview
 
--   `nagios`
-    -   `get-logs <alerts|notifications>`
-        -   `[host|service <host name|service description>]`
-    -   `set-logs-limit <count>`
-    -   `set-logs-start-time <seconds>`
-    -   `subscribe <report|configuration-changes>`
-    -   `unsubscribe <report|configuration-changes>`
-    -   `set-report-frequency <minutes>`
+- `nagios`
+    - `get-logs <alerts|notifications>`
+        - `[host|service <host name|service description>]`
+    - `set-logs-limit <count>`
+    - `set-logs-start-time <seconds>`
+    - `subscribe <report|configuration-changes>`
+    - `unsubscribe <report|configuration-changes>`
+    - `set-report-frequency <minutes>`
 
 ### Slash commands
 
@@ -146,15 +146,16 @@ There is a [docker-compose.yml](https://github.com/mattermost/mattermost-plugin-
 
 You can login with these credentials:
 
--   Username: `nagiosadmin`
--   Password: `nagios`
+- Username: `nagiosadmin`
+- Password: `nagios`
 
 ### Develop the watcher
 
 To build the watcher, you can use the following command:
 
-sh
+```sh
 env GOOS=linux GOARCH=amd64 go build -o dist/watcherX.Y.Z.linux-amd64 -a -v cmd/watcher/main.go
+```
 
 Of course, you can build the watcher for other operating systems and architectures too.
 
@@ -162,17 +163,18 @@ Of course, you can build the watcher for other operating systems and architectur
 
 If your Mattermost server is running locally, you can enable [local mode](https://docs.mattermost.com/administration/mmctl-cli-tool.html#local-mode) to streamline deploying your plugin. After configuring it, just run:
 
-sh
+```sh
 make deploy
-
+```
 ### Deploy with credentials
 
 Alternatively, you can authenticate with the server's API with a [personal access token](https://docs.mattermost.com/developer/personal-access-tokens.html):
 
-sh
+```sh
 export MM_SERVICESETTINGS_SITEURL=http://localhost:8065
 export MM_ADMIN_TOKEN=j44acwd8obn78cdcx7koid4jkr
 make deploy
+```
 
 See the Development guide section for information about how to contribute to this plugin.
 
@@ -183,6 +185,8 @@ Please file a [GitHub issue](https://github.com/mattermost/mattermost-plugin-nag
 Pull Requests are welcome! You can contact us on the [Mattermost Community ~Plugin: Nagios channel](https://community.mattermost.com/core/channels/plugin-nagios).
 
 To avoid having to manually install your plugin, build and deploy your plugin using one of the following options.
+
+### Share Feedback
 
 Feel free to create a [GitHub Issue](https://github.com/mattermost/mattermost-plugin-nagios/issues) or join the [Nagios Plugin channel](https://community.mattermost.com/core/channels/plugin-nagios) on the Mattermost Community server to discuss.
 
