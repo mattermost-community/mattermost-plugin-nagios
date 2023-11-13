@@ -47,3 +47,6 @@ issues:
     - path: server/
       linters:
         - unused-parameter
+    - path: internal/
+      linters:
+        - unused-parameter
