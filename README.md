@@ -102,7 +102,7 @@ When you’ve tested the plugin and confirmed it’s working, notify your team s
 > Hi team,
 > 
 > We've set up the Mattermost Nagios plugin, so you can get notifications from Nagios in Mattermost. 
-> To get started, take a look at the slash commands section ([link](https://mattermost.gitbook.io/nagios-plugin/user-guide/slash-commands).
+> To get started, take a look at the slash commands section ([link](https://github.com/mattermost/mattermost-plugin-nagios/#slash-commands).
 
 ## Development
 
